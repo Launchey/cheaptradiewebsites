@@ -117,7 +117,7 @@ export default function FAQ() {
       ref={sectionRef}
       className="py-24 md:py-32 bg-[var(--bg-warm)]"
     >
-      <div className="max-w-3xl mx-auto px-5">
+      <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Section header */}
         <div className="text-center mb-16 reveal">
           <span className="inline-block text-[var(--text-muted)] font-medium text-xs uppercase tracking-widest mb-4">

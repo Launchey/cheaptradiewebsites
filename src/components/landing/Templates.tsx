@@ -75,7 +75,7 @@ export default function Templates() {
       ref={sectionRef}
       className="py-24 md:py-32 bg-[var(--bg-warm)] relative"
     >
-      <div className="max-w-7xl mx-auto px-5">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Section header */}
         <div className="text-center mb-20 reveal">
           <span className="inline-block text-[var(--text-muted)] font-medium text-xs uppercase tracking-widest mb-4">
@@ -95,13 +95,13 @@ export default function Templates() {
         </div>
 
         {/* Template grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {templates.map((template, i) => (
             <div
               key={template.name}
               className={`reveal reveal-delay-${(i % 4) + 1} group cursor-pointer`}
             >
-              <div className="bg-[var(--bg-card)] rounded-[var(--radius-md)] overflow-hidden border border-[var(--border)] transition-all duration-300 hover:shadow-[var(--shadow-lg)] hover:-translate-y-1">
+              <div className="bg-[var(--bg-card)] rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border)] transition-all duration-500 hover:shadow-[var(--shadow-xl)] hover:-translate-y-2">
                 {/* Fake browser chrome */}
                 <div
                   className="relative"
@@ -109,14 +109,19 @@ export default function Templates() {
                 >
                   {/* Browser bar */}
                   <div className="flex items-center gap-1.5 px-3 py-2.5 bg-black/20">
-                    <div className="w-2 h-2 rounded-full bg-white/30" />
-                    <div className="w-2 h-2 rounded-full bg-white/30" />
-                    <div className="w-2 h-2 rounded-full bg-white/30" />
-                    <div className="ml-3 flex-1 h-4 bg-white/10 rounded-sm" />
+                    <div className="flex gap-1.5">
+                      <div className="w-2 h-2 rounded-full bg-white/25" />
+                      <div className="w-2 h-2 rounded-full bg-white/25" />
+                      <div className="w-2 h-2 rounded-full bg-white/25" />
+                    </div>
+                    <div className="ml-3 flex-1 h-5 bg-white/10 rounded-sm px-2 flex items-center">
+                      <div className="h-1 w-2 rounded-full bg-white/20 mr-1.5" />
+                      <div className="h-1.5 w-16 bg-white/15 rounded-full" />
+                    </div>
                   </div>
 
                   {/* Mini website preview */}
-                  <div className="h-44 p-3 relative overflow-hidden">
+                  <div className="h-52 p-3 relative overflow-hidden">
                     {/* Nav bar */}
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-1.5">
@@ -135,28 +140,38 @@ export default function Templates() {
 
                     {/* Hero area */}
                     <div
-                      className="rounded-sm p-3 mb-2 flex flex-col items-center justify-center"
-                      style={{ backgroundColor: template.color, minHeight: "60px" }}
+                      className="rounded-sm p-4 mb-2.5 flex flex-col items-center justify-center"
+                      style={{ backgroundColor: template.color, minHeight: "70px" }}
                     >
-                      <div className="h-2 w-28 bg-white/50 rounded-full mb-1.5" />
-                      <div className="h-1.5 w-20 bg-white/25 rounded-full mb-2" />
+                      <div className="h-1 w-16 bg-white/30 rounded-full mb-2" />
+                      <div className="h-2.5 w-32 bg-white/50 rounded-full mb-1.5" />
+                      <div className="h-1.5 w-24 bg-white/25 rounded-full mb-3" />
                       <div
-                        className="h-4 w-16 rounded-sm"
+                        className="h-5 w-20 rounded-sm flex items-center justify-center"
                         style={{ backgroundColor: template.accent }}
-                      />
+                      >
+                        <div className="h-1 w-10 bg-white/60 rounded-full" />
+                      </div>
                     </div>
 
                     {/* Content cards */}
                     <div className="flex gap-2">
-                      <div className="flex-1 h-10 bg-white/8 rounded-sm border border-white/10" />
-                      <div className="flex-1 h-10 bg-white/8 rounded-sm border border-white/10" />
-                      <div className="flex-1 h-10 bg-white/8 rounded-sm border border-white/10" />
+                      {[0, 1, 2].map((j) => (
+                        <div key={j} className="flex-1 bg-white/[0.06] rounded-sm border border-white/[0.08] p-2">
+                          <div
+                            className="w-5 h-5 rounded-full mx-auto mb-1.5 opacity-40"
+                            style={{ backgroundColor: template.accent }}
+                          />
+                          <div className="h-1 w-10 bg-white/20 rounded-full mx-auto mb-1" />
+                          <div className="h-1 w-8 bg-white/10 rounded-full mx-auto" />
+                        </div>
+                      ))}
                     </div>
                   </div>
 
                   {/* Hover overlay */}
-                  <div className="absolute inset-0 top-[33px] bg-[var(--accent)]/0 group-hover:bg-[var(--accent)]/90 transition-all duration-300 flex items-center justify-center">
-                    <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-base tracking-wide">
+                  <div className="absolute inset-0 top-[37px] bg-[var(--accent)]/0 group-hover:bg-[var(--accent)]/90 transition-all duration-300 flex items-center justify-center">
+                    <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm uppercase tracking-wider">
                       Use This Template
                     </span>
                   </div>
@@ -164,12 +179,20 @@ export default function Templates() {
 
                 {/* Template info */}
                 <div className="p-5">
-                  <h3 className="font-[var(--font-heading)] text-xl text-[var(--text-primary)] mb-1">
-                    {template.name}
-                  </h3>
-                  <p className="text-sm text-[var(--text-muted)]">
-                    {template.trade}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-[var(--font-heading)] text-lg text-[var(--text-primary)] mb-0.5">
+                        {template.name}
+                      </h3>
+                      <p className="text-sm text-[var(--text-muted)]">
+                        {template.trade}
+                      </p>
+                    </div>
+                    <div
+                      className="w-8 h-8 rounded-full opacity-80 group-hover:scale-110 transition-transform duration-300"
+                      style={{ background: `linear-gradient(135deg, ${template.color}, ${template.accent})` }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

@@ -41,7 +41,7 @@ export default function Pricing() {
       ref={sectionRef}
       className="py-24 md:py-32 bg-[var(--bg-warm)] relative overflow-hidden"
     >
-      <div className="max-w-4xl mx-auto px-5 relative z-10">
+      <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
         {/* Section header */}
         <div className="text-center mb-16 reveal">
           <span className="inline-block text-[var(--text-muted)] font-medium text-xs uppercase tracking-widest mb-4">
@@ -82,16 +82,16 @@ export default function Pricing() {
 
             {/* Price */}
             <div className="mb-8">
-              <div className="flex items-baseline gap-2">
-                <span className="text-[var(--text-muted)] text-lg">$</span>
-                <span className="font-[var(--font-heading)] text-7xl md:text-8xl text-[var(--text-primary)]">
+              <div className="flex items-baseline gap-1">
+                <span className="text-[var(--text-muted)] text-xl font-light">$</span>
+                <span className="font-[var(--font-heading)] text-6xl md:text-7xl text-[var(--text-primary)] leading-none">
                   500
                 </span>
-                <span className="text-[var(--text-muted)] text-base ml-1">
+                <span className="text-[var(--text-muted)] text-sm ml-2 self-end mb-2">
                   NZD
                 </span>
               </div>
-              <p className="text-[var(--text-secondary)] mt-2">
+              <p className="text-[var(--text-secondary)] mt-3">
                 One-time payment. No monthly fees. It&apos;s yours forever.
               </p>
             </div>

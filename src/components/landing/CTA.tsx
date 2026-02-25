@@ -27,7 +27,7 @@ export default function CTA() {
 
   return (
     <section ref={sectionRef} className="py-24 md:py-32 bg-[var(--bg-cream)] relative">
-      <div className="max-w-4xl mx-auto px-5 text-center">
+      <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
         <div className="reveal">
           <div className="editorial-line mx-auto mb-8" />
           <h2

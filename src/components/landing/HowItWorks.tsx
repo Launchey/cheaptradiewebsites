@@ -101,7 +101,7 @@ export default function HowItWorks() {
       ref={sectionRef}
       className="py-24 md:py-32 bg-white relative"
     >
-      <div className="max-w-7xl mx-auto px-5">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12">
         {/* Section header — editorial style */}
         <div className="text-center mb-20 reveal">
           <span className="inline-block text-[var(--text-muted)] font-medium text-xs uppercase tracking-widest mb-4">
@@ -117,29 +117,33 @@ export default function HowItWorks() {
         </div>
 
         {/* Steps */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 relative">
-          {/* Connecting dotted line (desktop) */}
-          <div className="hidden md:block absolute top-14 left-[20%] right-[20%] border-t-2 border-dashed border-[var(--border)]" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 relative">
+          {/* Connecting line (desktop) */}
+          <div className="hidden md:block absolute top-16 left-[20%] right-[20%]">
+            <div className="h-px bg-[var(--border)]" />
+          </div>
 
           {steps.map((step, i) => (
             <div
               key={step.number}
               className={`reveal reveal-delay-${i + 1} text-center relative`}
             >
-              {/* Step circle — thin border, refined */}
-              <div className="w-28 h-28 mx-auto mb-6 rounded-full border-2 border-[var(--border)] flex items-center justify-center relative bg-white">
-                <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full border-2 border-[var(--accent)] bg-white flex items-center justify-center">
-                  <span className="font-[var(--font-heading)] text-sm text-[var(--accent)]">
+              {/* Step number + icon */}
+              <div className="relative inline-flex flex-col items-center mb-8">
+                <div className="w-[7.5rem] h-[7.5rem] rounded-full border border-[var(--border)] flex items-center justify-center relative bg-white shadow-[var(--shadow-sm)]">
+                  <div className="text-[var(--accent)]">{step.icon}</div>
+                </div>
+                <div className="absolute -top-2 -right-2 w-9 h-9 rounded-full bg-[var(--accent)] text-white flex items-center justify-center shadow-[var(--shadow-sm)]">
+                  <span className="font-[var(--font-heading)] text-sm">
                     {step.number}
                   </span>
                 </div>
-                <div className="text-[var(--text-secondary)]">{step.icon}</div>
               </div>
 
               <h3 className="font-[var(--font-heading)] text-xl mb-3 text-[var(--text-primary)]">
                 {step.title}
               </h3>
-              <p className="text-[var(--text-secondary)] leading-relaxed max-w-xs mx-auto">
+              <p className="text-[var(--text-secondary)] leading-relaxed max-w-[260px] mx-auto">
                 {step.description}
               </p>
             </div>

@@ -28,7 +28,7 @@ export default function Header() {
           : "bg-transparent py-5"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-5 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-6 sm:px-8 lg:px-12 flex items-center justify-between">
         {/* Logo */}
         <a href="/" className="flex items-center gap-0 group">
           <span className="font-[var(--font-heading)] text-2xl tracking-tight text-[var(--text-primary)]">
@@ -40,7 +40,7 @@ export default function Header() {
         </a>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8">
+        <nav className="hidden lg:flex items-center gap-8">
           {navLinks.map((link) => (
             <a
               key={link.href}
@@ -57,7 +57,7 @@ export default function Header() {
 
         {/* Mobile Hamburger */}
         <button
-          className="md:hidden flex flex-col gap-1.5 p-2 cursor-pointer"
+          className="lg:hidden flex flex-col gap-1.5 p-2 cursor-pointer"
           onClick={() => setMenuOpen(!menuOpen)}
           aria-expanded={menuOpen}
           aria-label="Toggle menu"
@@ -82,11 +82,11 @@ export default function Header() {
 
       {/* Mobile Menu */}
       <div
-        className={`md:hidden overflow-hidden transition-all duration-300 ${
+        className={`lg:hidden overflow-hidden transition-all duration-300 ${
           menuOpen ? "max-h-80 opacity-100" : "max-h-0 opacity-0"
         }`}
       >
-        <nav className="bg-[var(--bg-primary)] border-t border-[var(--border)] px-5 py-4 flex flex-col gap-3">
+        <nav className="bg-[var(--bg-primary)] border-t border-[var(--border)] px-6 sm:px-8 lg:px-12 py-4 flex flex-col gap-3">
           {navLinks.map((link) => (
             <a
               key={link.href}

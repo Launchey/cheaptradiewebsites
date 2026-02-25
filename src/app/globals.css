@@ -51,11 +51,9 @@
 }
 
 /* ===== RESET & BASE ===== */
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
+/* Note: Tailwind CSS 4 Preflight handles margin/padding/box-sizing resets.
+   Do NOT add * { margin: 0 } here — un-layered styles override Tailwind's
+   layered utilities (like mx-auto), breaking centered layouts. */
 
 html {
   scroll-behavior: smooth;
