@@ -1,0 +1,21 @@
+{
+  "name": "CheapTradieWebsites",
+  "short_name": "CheapTradie",
+  "description": "Professional websites for NZ tradies. From $500.",
+  "start_url": "/",
+  "display": "browser",
+  "background_color": "#FAFAF7",
+  "theme_color": "#E8740C",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
