@@ -15,22 +15,19 @@ const footerLinks = {
 export default function Footer() {
   return (
     <footer className="bg-[var(--bg-dark)] text-[var(--text-on-dark)] relative overflow-hidden">
-      {/* Diagonal stripe top accent */}
-      <div className="h-1.5 w-full bg-[var(--accent)]" />
+      {/* Thin editorial line top accent */}
+      <div className="h-px w-full bg-[var(--accent)]" />
 
       <div className="max-w-7xl mx-auto px-5 py-16">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 bg-[var(--accent)] rounded-[var(--radius-sm)] flex items-center justify-center rotate-[-3deg]">
-                <span className="text-white font-[var(--font-heading)] text-base font-black leading-none">
-                  C
-                </span>
-              </div>
-              <span className="font-[var(--font-heading)] text-lg font-black tracking-tight">
+            <div className="flex items-center gap-0 mb-4">
+              <span className="font-[var(--font-heading)] text-xl tracking-tight">
                 CheapTradie
-                <span className="text-[var(--accent)]">Websites</span>
+              </span>
+              <span className="font-[var(--font-heading)] text-xl tracking-tight text-[var(--accent)]">
+                Websites
               </span>
             </div>
             <p className="text-[var(--text-on-dark-muted)] max-w-sm leading-relaxed">
@@ -42,7 +39,7 @@ export default function Footer() {
           {/* Links */}
           {Object.entries(footerLinks).map(([heading, links]) => (
             <div key={heading}>
-              <h4 className="font-semibold text-sm uppercase tracking-widest text-[var(--text-on-dark-muted)] mb-4">
+              <h4 className="font-medium text-xs uppercase tracking-widest text-[var(--text-on-dark-muted)] mb-4">
                 {heading}
               </h4>
               <ul className="space-y-3">

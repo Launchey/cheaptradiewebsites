@@ -49,29 +49,26 @@ function FAQItem({
   return (
     <div className="border-b border-[var(--border)] last:border-b-0">
       <button
-        className="w-full text-left py-5 flex items-center justify-between gap-4 cursor-pointer group"
+        className="w-full text-left py-6 flex items-center justify-between gap-4 cursor-pointer group"
         onClick={onClick}
         aria-expanded={isOpen}
       >
-        <span className="font-semibold text-[var(--text-primary)] text-lg group-hover:text-[var(--accent)] transition-colors duration-200">
+        <span className="font-[var(--font-heading)] text-[var(--text-primary)] text-lg group-hover:text-[var(--accent)] transition-colors duration-200">
           {question}
         </span>
         <span
-          className={`shrink-0 w-8 h-8 rounded-full border border-[var(--border)] flex items-center justify-center transition-all duration-300 ${
-            isOpen
-              ? "bg-[var(--accent)] border-[var(--accent)] rotate-45"
-              : "group-hover:border-[var(--accent)]"
-          }`}
+          className={`shrink-0 w-8 h-8 flex items-center justify-center transition-all duration-300 text-[var(--text-muted)]`}
         >
           <svg
-            width="14"
-            height="14"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
-            stroke={isOpen ? "white" : "currentColor"}
-            strokeWidth="2"
+            stroke="currentColor"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
+            className={`transition-transform duration-300 ${isOpen ? "rotate-45" : ""}`}
           >
             <line x1="12" y1="5" x2="12" y2="19" />
             <line x1="5" y1="12" x2="19" y2="12" />
@@ -80,7 +77,7 @@ function FAQItem({
       </button>
       <div
         className={`overflow-hidden transition-all duration-300 ${
-          isOpen ? "max-h-48 pb-5" : "max-h-0"
+          isOpen ? "max-h-48 pb-6" : "max-h-0"
         }`}
       >
         <p className="text-[var(--text-secondary)] leading-relaxed pr-12">
@@ -118,16 +115,17 @@ export default function FAQ() {
     <section
       id="faq"
       ref={sectionRef}
-      className="py-24 md:py-32 bg-[var(--bg-secondary)]"
+      className="py-24 md:py-32 bg-[var(--bg-warm)]"
     >
       <div className="max-w-3xl mx-auto px-5">
         {/* Section header */}
-        <div className="text-center mb-12 reveal">
-          <span className="inline-block text-[var(--accent)] font-semibold text-sm uppercase tracking-widest mb-3">
+        <div className="text-center mb-16 reveal">
+          <span className="inline-block text-[var(--text-muted)] font-medium text-xs uppercase tracking-widest mb-4">
             FAQ
           </span>
+          <div className="editorial-line mx-auto mb-6" />
           <h2
-            className="font-[var(--font-heading)] font-black tracking-tight text-[var(--text-primary)]"
+            className="font-[var(--font-heading)] tracking-tight text-[var(--text-primary)]"
             style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
           >
             Got Questions?
@@ -135,7 +133,7 @@ export default function FAQ() {
         </div>
 
         {/* FAQ list */}
-        <div className="reveal reveal-delay-1 bg-white rounded-[var(--radius-xl)] p-6 md:p-8 shadow-[var(--shadow-sm)] border border-[var(--border)]">
+        <div className="reveal reveal-delay-1 bg-white rounded-[var(--radius-md)] p-6 md:p-10 shadow-[var(--shadow-sm)] border border-[var(--border)]">
           {faqs.map((faq, i) => (
             <FAQItem
               key={i}

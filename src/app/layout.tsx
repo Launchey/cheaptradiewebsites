@@ -1,25 +1,19 @@
 import type { Metadata } from "next";
-import { DM_Sans } from "next/font/google";
-import localFont from "next/font/local";
+import { DM_Serif_Display, Outfit } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 
-const dmSans = DM_Sans({
-  variable: "--font-body",
+const dmSerifDisplay = DM_Serif_Display({
+  variable: "--font-heading",
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400"],
 });
 
-const archivo = localFont({
-  src: [
-    {
-      path: "../fonts/ArchivoBlack-Regular.ttf",
-      weight: "900",
-      style: "normal",
-    },
-  ],
-  variable: "--font-heading",
+const outfit = Outfit({
+  variable: "--font-body",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -64,7 +58,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en-NZ" className="scroll-smooth">
-      <body className={`${dmSans.variable} ${archivo.variable} antialiased`}>
+      <body className={`${dmSerifDisplay.variable} ${outfit.variable} antialiased`}>
         <Header />
         <main>{children}</main>
         <Footer />

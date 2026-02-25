@@ -6,44 +6,44 @@ const templates = [
   {
     name: "Solid Ground",
     trade: "Builder / Construction",
-    color: "#8B7355",
-    accent: "#D4A574",
-    description: "Bold, professional look for builders and construction crews.",
+    color: "#7A6652",
+    accent: "#C4A882",
+    dark: "#4A3D30",
   },
   {
     name: "Bright Spark",
     trade: "Electrician",
-    color: "#2D5A87",
-    accent: "#F5C842",
-    description: "Clean, modern design for electrical businesses.",
+    color: "#3D5A6E",
+    accent: "#D4A84B",
+    dark: "#2A3E4D",
   },
   {
     name: "Clear Flow",
     trade: "Plumber / Drainlayer",
-    color: "#1B6B93",
-    accent: "#58B4D1",
-    description: "Fresh, trustworthy look for plumbing and drainage.",
+    color: "#2E6066",
+    accent: "#6AABB8",
+    dark: "#1D4248",
   },
   {
     name: "True Level",
     trade: "Painter / Decorator",
-    color: "#6B5B73",
-    accent: "#E8A87C",
-    description: "Creative, polished design for painters and decorators.",
+    color: "#6B5B6E",
+    accent: "#D4A07A",
+    dark: "#4A3D4D",
   },
   {
     name: "Iron Edge",
     trade: "Roofer / Steel",
-    color: "#4A4A4A",
-    accent: "#C4553E",
-    description: "Strong, industrial feel for roofing and steel work.",
+    color: "#4F4A47",
+    accent: "#B8614E",
+    dark: "#332F2D",
   },
   {
     name: "Green Acres",
     trade: "Landscaper",
-    color: "#2D6A4F",
-    accent: "#95D5B2",
-    description: "Natural, earthy design for landscaping businesses.",
+    color: "#4A6B4F",
+    accent: "#8BB88F",
+    dark: "#344A37",
   },
 ];
 
@@ -73,16 +73,17 @@ export default function Templates() {
     <section
       id="templates"
       ref={sectionRef}
-      className="py-24 md:py-32 bg-[var(--bg-secondary)] relative"
+      className="py-24 md:py-32 bg-[var(--bg-warm)] relative"
     >
       <div className="max-w-7xl mx-auto px-5">
         {/* Section header */}
-        <div className="text-center mb-16 reveal">
-          <span className="inline-block text-[var(--accent)] font-semibold text-sm uppercase tracking-widest mb-3">
+        <div className="text-center mb-20 reveal">
+          <span className="inline-block text-[var(--text-muted)] font-medium text-xs uppercase tracking-widest mb-4">
             Templates
           </span>
+          <div className="editorial-line mx-auto mb-6" />
           <h2
-            className="font-[var(--font-heading)] font-black tracking-tight text-[var(--text-primary)] mb-4"
+            className="font-[var(--font-heading)] tracking-tight text-[var(--text-primary)] mb-4"
             style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
           >
             Designed for Your Trade
@@ -94,50 +95,68 @@ export default function Templates() {
         </div>
 
         {/* Template grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {templates.map((template, i) => (
             <div
               key={template.name}
               className={`reveal reveal-delay-${(i % 4) + 1} group cursor-pointer`}
             >
-              <div className="bg-white rounded-[var(--radius-lg)] overflow-hidden shadow-[var(--shadow-sm)] border border-[var(--border)] transition-all duration-300 hover:shadow-[var(--shadow-lg)] hover:-translate-y-1">
-                {/* Template preview placeholder */}
+              <div className="bg-[var(--bg-card)] rounded-[var(--radius-md)] overflow-hidden border border-[var(--border)] transition-all duration-300 hover:shadow-[var(--shadow-lg)] hover:-translate-y-1">
+                {/* Fake browser chrome */}
                 <div
-                  className="h-48 relative overflow-hidden"
-                  style={{ backgroundColor: template.color }}
+                  className="relative"
+                  style={{ backgroundColor: template.dark }}
                 >
-                  {/* Fake website preview */}
-                  <div className="absolute inset-3 bg-white/10 backdrop-blur-sm rounded-lg p-4 flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-6 h-6 rounded"
-                        style={{ backgroundColor: template.accent }}
-                      />
-                      <div className="h-2 w-20 bg-white/30 rounded" />
-                      <div className="ml-auto flex gap-1">
-                        <div className="h-2 w-8 bg-white/20 rounded" />
-                        <div className="h-2 w-8 bg-white/20 rounded" />
-                        <div className="h-2 w-8 bg-white/20 rounded" />
+                  {/* Browser bar */}
+                  <div className="flex items-center gap-1.5 px-3 py-2.5 bg-black/20">
+                    <div className="w-2 h-2 rounded-full bg-white/30" />
+                    <div className="w-2 h-2 rounded-full bg-white/30" />
+                    <div className="w-2 h-2 rounded-full bg-white/30" />
+                    <div className="ml-3 flex-1 h-4 bg-white/10 rounded-sm" />
+                  </div>
+
+                  {/* Mini website preview */}
+                  <div className="h-44 p-3 relative overflow-hidden">
+                    {/* Nav bar */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-1.5">
+                        <div
+                          className="w-4 h-4 rounded-sm"
+                          style={{ backgroundColor: template.accent }}
+                        />
+                        <div className="h-1.5 w-14 bg-white/30 rounded-full" />
+                      </div>
+                      <div className="flex gap-3">
+                        <div className="h-1.5 w-8 bg-white/20 rounded-full" />
+                        <div className="h-1.5 w-8 bg-white/20 rounded-full" />
+                        <div className="h-1.5 w-8 bg-white/20 rounded-full" />
                       </div>
                     </div>
-                    <div className="flex-1 flex flex-col justify-center items-center gap-2">
-                      <div className="h-3 w-32 bg-white/40 rounded" />
-                      <div className="h-2 w-24 bg-white/20 rounded" />
+
+                    {/* Hero area */}
+                    <div
+                      className="rounded-sm p-3 mb-2 flex flex-col items-center justify-center"
+                      style={{ backgroundColor: template.color, minHeight: "60px" }}
+                    >
+                      <div className="h-2 w-28 bg-white/50 rounded-full mb-1.5" />
+                      <div className="h-1.5 w-20 bg-white/25 rounded-full mb-2" />
                       <div
-                        className="h-6 w-20 rounded mt-1"
+                        className="h-4 w-16 rounded-sm"
                         style={{ backgroundColor: template.accent }}
                       />
                     </div>
+
+                    {/* Content cards */}
                     <div className="flex gap-2">
-                      <div className="h-8 flex-1 bg-white/10 rounded" />
-                      <div className="h-8 flex-1 bg-white/10 rounded" />
-                      <div className="h-8 flex-1 bg-white/10 rounded" />
+                      <div className="flex-1 h-10 bg-white/8 rounded-sm border border-white/10" />
+                      <div className="flex-1 h-10 bg-white/8 rounded-sm border border-white/10" />
+                      <div className="flex-1 h-10 bg-white/8 rounded-sm border border-white/10" />
                     </div>
                   </div>
 
                   {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-[var(--accent)]/0 group-hover:bg-[var(--accent)]/90 transition-all duration-300 flex items-center justify-center">
-                    <span className="text-white font-semibold opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-lg">
+                  <div className="absolute inset-0 top-[33px] bg-[var(--accent)]/0 group-hover:bg-[var(--accent)]/90 transition-all duration-300 flex items-center justify-center">
+                    <span className="text-white font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-base tracking-wide">
                       Use This Template
                     </span>
                   </div>
@@ -145,22 +164,11 @@ export default function Templates() {
 
                 {/* Template info */}
                 <div className="p-5">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="font-[var(--font-heading)] font-black text-lg text-[var(--text-primary)]">
-                      {template.name}
-                    </h3>
-                    <span
-                      className="text-xs font-semibold px-2 py-1 rounded-full"
-                      style={{
-                        backgroundColor: template.accent + "20",
-                        color: template.color,
-                      }}
-                    >
-                      {template.trade}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    {template.description}
+                  <h3 className="font-[var(--font-heading)] text-xl text-[var(--text-primary)] mb-1">
+                    {template.name}
+                  </h3>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    {template.trade}
                   </p>
                 </div>
               </div>

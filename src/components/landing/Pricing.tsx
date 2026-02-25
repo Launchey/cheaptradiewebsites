@@ -39,28 +39,17 @@ export default function Pricing() {
     <section
       id="pricing"
       ref={sectionRef}
-      className="py-24 md:py-32 bg-[var(--bg-dark)] relative overflow-hidden"
+      className="py-24 md:py-32 bg-[var(--bg-warm)] relative overflow-hidden"
     >
-      {/* Background texture */}
-      <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage: `
-            linear-gradient(45deg, #fff 1px, transparent 1px),
-            linear-gradient(-45deg, #fff 1px, transparent 1px)
-          `,
-          backgroundSize: "40px 40px",
-        }}
-      />
-
       <div className="max-w-4xl mx-auto px-5 relative z-10">
         {/* Section header */}
-        <div className="text-center mb-12 reveal">
-          <span className="inline-block text-[var(--accent)] font-semibold text-sm uppercase tracking-widest mb-3">
+        <div className="text-center mb-16 reveal">
+          <span className="inline-block text-[var(--text-muted)] font-medium text-xs uppercase tracking-widest mb-4">
             Pricing
           </span>
+          <div className="editorial-line mx-auto mb-6" />
           <h2
-            className="font-[var(--font-heading)] font-black tracking-tight text-[var(--text-on-dark)]"
+            className="font-[var(--font-heading)] tracking-tight text-[var(--text-primary)]"
             style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
           >
             Simple Pricing. No Surprises.
@@ -69,12 +58,12 @@ export default function Pricing() {
 
         {/* Pricing card */}
         <div className="reveal reveal-delay-1 max-w-lg mx-auto">
-          <div className="bg-white rounded-[var(--radius-xl)] p-8 md:p-10 shadow-[var(--shadow-xl)] relative overflow-hidden">
-            {/* Orange accent bar */}
-            <div className="absolute top-0 left-0 right-0 h-1.5 bg-[var(--accent)]" />
+          <div className="bg-white rounded-[var(--radius-md)] p-8 md:p-12 shadow-[var(--shadow-md)] relative overflow-hidden border border-[var(--border)]">
+            {/* Thin accent top border */}
+            <div className="absolute top-0 left-0 right-0 h-[2px] bg-[var(--accent)]" />
 
             {/* Free preview badge */}
-            <div className="inline-flex items-center gap-2 bg-[var(--accent-secondary)]/10 text-[var(--accent-secondary)] rounded-full px-3 py-1 text-sm font-semibold mb-6">
+            <div className="inline-flex items-center gap-2 bg-[var(--secondary)]/10 text-[var(--secondary)] rounded-[var(--radius-sm)] px-3 py-1.5 text-sm font-medium mb-8">
               <svg
                 width="16"
                 height="16"
@@ -92,33 +81,33 @@ export default function Pricing() {
             </div>
 
             {/* Price */}
-            <div className="mb-6">
-              <div className="flex items-baseline gap-1">
+            <div className="mb-8">
+              <div className="flex items-baseline gap-2">
                 <span className="text-[var(--text-muted)] text-lg">$</span>
-                <span className="font-[var(--font-heading)] font-black text-6xl md:text-7xl text-[var(--text-primary)]">
+                <span className="font-[var(--font-heading)] text-7xl md:text-8xl text-[var(--text-primary)]">
                   500
                 </span>
-                <span className="text-[var(--text-muted)] text-lg ml-1">
+                <span className="text-[var(--text-muted)] text-base ml-1">
                   NZD
                 </span>
               </div>
-              <p className="text-[var(--text-secondary)] mt-1">
+              <p className="text-[var(--text-secondary)] mt-2">
                 One-time payment. No monthly fees. It&apos;s yours forever.
               </p>
             </div>
 
             {/* Divider */}
-            <div className="h-px bg-[var(--border)] mb-6" />
+            <div className="h-px bg-[var(--border)] mb-8" />
 
             {/* What's included */}
-            <h4 className="font-semibold text-sm uppercase tracking-widest text-[var(--text-muted)] mb-4">
+            <h4 className="font-medium text-xs uppercase tracking-widest text-[var(--text-muted)] mb-5">
               What&apos;s Included
             </h4>
-            <ul className="space-y-3 mb-8">
+            <ul className="space-y-4 mb-10">
               {included.map((item) => (
                 <li key={item} className="flex items-start gap-3">
                   <svg
-                    className="w-5 h-5 text-[var(--accent-secondary)] shrink-0 mt-0.5"
+                    className="w-5 h-5 text-[var(--secondary)] shrink-0 mt-0.5"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
@@ -126,8 +115,7 @@ export default function Pricing() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
+                    <polyline points="20 6 9 17 4 12" />
                   </svg>
                   <span className="text-[var(--text-primary)]">{item}</span>
                 </li>

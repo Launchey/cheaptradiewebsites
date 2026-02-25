@@ -26,23 +26,24 @@ export default function CTA() {
   }, []);
 
   return (
-    <section ref={sectionRef} className="py-24 md:py-32 bg-white relative">
+    <section ref={sectionRef} className="py-24 md:py-32 bg-[var(--bg-cream)] relative">
       <div className="max-w-4xl mx-auto px-5 text-center">
         <div className="reveal">
+          <div className="editorial-line mx-auto mb-8" />
           <h2
-            className="font-[var(--font-heading)] font-black tracking-tight text-[var(--text-primary)] mb-6"
+            className="font-[var(--font-heading)] tracking-tight text-[var(--text-primary)] mb-6"
             style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
           >
             Ready to Get Your
             <br />
             Trade Business Online?
           </h2>
-          <p className="text-[var(--text-secondary)] text-lg mb-8 max-w-xl mx-auto">
+          <p className="text-[var(--text-secondary)] text-lg mb-10 max-w-xl mx-auto leading-relaxed">
             No tech skills. No long waits. No monthly fees. Just a professional
             website that makes your business look as good as your work.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button href="#hero" size="lg">
+            <Button href="#hero" size="lg" variant="primary">
               Get Your Free Preview
             </Button>
             <Button href="#how-it-works" variant="outline" size="lg">

@@ -10,8 +10,8 @@ const steps = [
       "Paste a website you like the look of, or choose from our tradie templates. We\u2019ll match the style to your business.",
     icon: (
       <svg
-        width="32"
-        height="32"
+        width="28"
+        height="28"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -33,8 +33,8 @@ const steps = [
       "Answer a few simple questions \u2014 your trade, location, services, contact details. Takes about 2 minutes.",
     icon: (
       <svg
-        width="32"
-        height="32"
+        width="28"
+        height="28"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -57,8 +57,8 @@ const steps = [
       "AI builds your custom website in minutes. Preview it for free. Love it? Pay $500 and it\u2019s yours \u2014 live and ready to share.",
     icon: (
       <svg
-        width="32"
-        height="32"
+        width="28"
+        height="28"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
@@ -102,13 +102,14 @@ export default function HowItWorks() {
       className="py-24 md:py-32 bg-white relative"
     >
       <div className="max-w-7xl mx-auto px-5">
-        {/* Section header */}
-        <div className="text-center mb-16 reveal">
-          <span className="inline-block text-[var(--accent)] font-semibold text-sm uppercase tracking-widest mb-3">
+        {/* Section header — editorial style */}
+        <div className="text-center mb-20 reveal">
+          <span className="inline-block text-[var(--text-muted)] font-medium text-xs uppercase tracking-widest mb-4">
             How It Works
           </span>
+          <div className="editorial-line mx-auto mb-6" />
           <h2
-            className="font-[var(--font-heading)] font-black tracking-tight text-[var(--text-primary)]"
+            className="font-[var(--font-heading)] tracking-tight text-[var(--text-primary)]"
             style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
           >
             Three Steps. That&apos;s It.
@@ -117,23 +118,25 @@ export default function HowItWorks() {
 
         {/* Steps */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-12 relative">
-          {/* Connecting line (desktop) */}
-          <div className="hidden md:block absolute top-16 left-[16%] right-[16%] h-px bg-[var(--border)]" />
+          {/* Connecting dotted line (desktop) */}
+          <div className="hidden md:block absolute top-14 left-[20%] right-[20%] border-t-2 border-dashed border-[var(--border)]" />
 
           {steps.map((step, i) => (
             <div
               key={step.number}
               className={`reveal reveal-delay-${i + 1} text-center relative`}
             >
-              {/* Step number circle */}
-              <div className="w-32 h-32 mx-auto mb-6 rounded-full bg-[var(--bg-secondary)] flex items-center justify-center relative">
-                <div className="absolute -top-2 -right-2 w-8 h-8 bg-[var(--accent)] rounded-full flex items-center justify-center text-white text-xs font-bold">
-                  {step.number}
+              {/* Step circle — thin border, refined */}
+              <div className="w-28 h-28 mx-auto mb-6 rounded-full border-2 border-[var(--border)] flex items-center justify-center relative bg-white">
+                <div className="absolute -top-1 -right-1 w-8 h-8 rounded-full border-2 border-[var(--accent)] bg-white flex items-center justify-center">
+                  <span className="font-[var(--font-heading)] text-sm text-[var(--accent)]">
+                    {step.number}
+                  </span>
                 </div>
-                <div className="text-[var(--text-primary)]">{step.icon}</div>
+                <div className="text-[var(--text-secondary)]">{step.icon}</div>
               </div>
 
-              <h3 className="font-[var(--font-heading)] font-black text-xl mb-3 text-[var(--text-primary)]">
+              <h3 className="font-[var(--font-heading)] text-xl mb-3 text-[var(--text-primary)]">
                 {step.title}
               </h3>
               <p className="text-[var(--text-secondary)] leading-relaxed max-w-xs mx-auto">

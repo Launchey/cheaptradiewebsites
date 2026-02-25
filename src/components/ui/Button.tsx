@@ -21,13 +21,13 @@ type ButtonProps = ButtonAsButton | ButtonAsLink;
 
 const variants: Record<ButtonVariant, string> = {
   primary:
-    "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] shadow-[0_2px_8px_rgba(232,116,12,0.3)] hover:shadow-[0_4px_16px_rgba(232,116,12,0.4)]",
+    "bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] shadow-[0_2px_8px_rgba(181,117,58,0.25)] hover:shadow-[0_4px_16px_rgba(181,117,58,0.35)]",
   secondary:
-    "bg-[var(--accent-secondary)] text-white hover:bg-[var(--accent-secondary-hover)]",
+    "bg-[var(--secondary)] text-white hover:bg-[var(--secondary-hover)]",
   outline:
     "border-2 border-[var(--text-primary)] text-[var(--text-primary)] hover:bg-[var(--text-primary)] hover:text-white",
   ghost:
-    "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-secondary)]",
+    "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-warm)]",
 };
 
 const sizes: Record<ButtonSize, string> = {
@@ -42,7 +42,7 @@ export default function Button({
   className = "",
   ...props
 }: ButtonProps) {
-  const classes = `inline-flex items-center justify-center gap-2 font-semibold rounded-[var(--radius-md)] transition-all duration-[var(--transition-base)] cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`;
+  const classes = `inline-flex items-center justify-center gap-2 font-medium rounded-[var(--radius-sm)] transition-all duration-[var(--transition-base)] cursor-pointer ${variants[variant]} ${sizes[size]} ${className}`;
 
   if ("href" in props && props.href) {
     const { href, ...rest } = props as ButtonAsLink;

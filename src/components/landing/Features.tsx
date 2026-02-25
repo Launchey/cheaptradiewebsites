@@ -96,34 +96,36 @@ export default function Features() {
 
   return (
     <section ref={sectionRef} className="py-24 md:py-32 bg-white relative">
-      <div className="max-w-7xl mx-auto px-5">
+      <div className="max-w-5xl mx-auto px-5">
         {/* Section header */}
-        <div className="text-center mb-16 reveal">
-          <span className="inline-block text-[var(--accent)] font-semibold text-sm uppercase tracking-widest mb-3">
+        <div className="text-center mb-20 reveal">
+          <span className="inline-block text-[var(--text-muted)] font-medium text-xs uppercase tracking-widest mb-4">
             Features
           </span>
+          <div className="editorial-line mx-auto mb-6" />
           <h2
-            className="font-[var(--font-heading)] font-black tracking-tight text-[var(--text-primary)]"
+            className="font-[var(--font-heading)] tracking-tight text-[var(--text-primary)]"
             style={{ fontSize: "clamp(2rem, 4vw, 3rem)" }}
           >
             Everything You Need. Nothing You Don&apos;t.
           </h2>
         </div>
 
-        {/* Feature grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Feature grid — 2 columns on desktop */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-16 gap-y-14">
           {features.map((feature, i) => (
             <div
               key={feature.title}
-              className={`reveal reveal-delay-${(i % 4) + 1} group p-6 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--bg-card)] hover:border-[var(--accent)]/30 transition-all duration-300 hover:shadow-[var(--shadow-md)]`}
+              className={`reveal reveal-delay-${(i % 4) + 1}`}
             >
-              <div className="w-12 h-12 rounded-[var(--radius-md)] bg-[var(--accent-light)] flex items-center justify-center text-[var(--accent)] mb-4 group-hover:bg-[var(--accent)] group-hover:text-white transition-all duration-300">
+              <div className="text-[var(--accent)] mb-4">
                 {feature.icon}
               </div>
-              <h3 className="font-[var(--font-heading)] font-black text-lg mb-2 text-[var(--text-primary)]">
+              <div className="editorial-line mb-4" />
+              <h3 className="font-[var(--font-heading)] text-xl mb-3 text-[var(--text-primary)]">
                 {feature.title}
               </h3>
-              <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
+              <p className="text-[var(--text-secondary)] leading-relaxed">
                 {feature.description}
               </p>
             </div>
