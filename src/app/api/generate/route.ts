@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createGenerateStream } from "@/lib/claude";
+
+export const maxDuration = 300; // 5 minutes for multi-turn Opus pipeline
 import { saveSite } from "@/lib/storage";
 import { generateSiteId } from "@/lib/utils";
 import type { BusinessInfo, ExtractedDesignTokens, ExtractedContent } from "@/lib/types";

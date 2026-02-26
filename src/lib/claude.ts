@@ -1,16 +1,114 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { BusinessInfo, ExtractedDesignTokens, ExtractedContent, ExtractedImage } from "./types";
-import { getUserPrompt, getRefinementPrompt } from "./prompts";
+import { buildPlanPrompt, GENERATE_PROMPT, REFINE_PROMPT, getTextRefinementPrompt } from "./prompts";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-const GENERATION_MODEL = "claude-sonnet-4-20250514";
-const ANALYSIS_MODEL = "claude-sonnet-4-20250514";
+const SONNET_MODEL = "claude-sonnet-4-6";
+const OPUS_MODEL = "claude-opus-4-6";
 
 const SKILL_ID = process.env.FRONTEND_DESIGN_SKILL_ID || "";
-const SKILLS_BETAS = ["code-execution-2025-08-25", "skills-2025-10-02"];
+const BETAS = [
+  "code-execution-2025-08-25" as const,
+  "skills-2025-10-02" as const,
+  "files-api-2025-04-14" as const,
+];
+
+const SHARED_TOOLS = [
+  { type: "code_execution_20250825" as const, name: "code_execution" as const },
+];
+
+const SHARED_PARAMS = {
+  model: OPUS_MODEL,
+  betas: BETAS,
+  cache_control: { type: "ephemeral" as const },
+  tools: SHARED_TOOLS,
+};
+
+const SKILL_CONFIG = [
+  { type: "custom" as const, skill_id: SKILL_ID, version: "latest" },
+];
+
+// ─── Helpers ───
+
+function logUsage(label: string, response: Anthropic.Beta.Messages.BetaMessage) {
+  const u = response.usage;
+  const cache = (u as unknown as Record<string, number>);
+  console.log(
+    `[CTW] ${label} | stop=${response.stop_reason} | ` +
+    `in=${u.input_tokens} out=${u.output_tokens} ` +
+    `cache_read=${cache.cache_read_input_tokens ?? 0} cache_write=${cache.cache_creation_input_tokens ?? 0} | ` +
+    `container=${response.container?.id ?? "none"}`
+  );
+}
+
+function elapsed(start: number): string {
+  return `${((Date.now() - start) / 1000).toFixed(1)}s`;
+}
+
+/**
+ * Stream a beta messages call and return the final BetaMessage.
+ * Required because synchronous calls timeout for long Opus generations.
+ */
+async function streamBetaMessage(
+  params: Parameters<typeof anthropic.beta.messages.create>[0],
+): Promise<Anthropic.Beta.Messages.BetaMessage> {
+  const stream = anthropic.beta.messages.stream(params);
+  return await stream.finalMessage();
+}
+
+async function handlePauseTurn(
+  response: Anthropic.Beta.Messages.BetaMessage,
+  messages: Anthropic.Beta.Messages.BetaMessageParam[],
+  containerId?: string,
+  label = "pause_turn",
+): Promise<Anthropic.Beta.Messages.BetaMessage> {
+  let current = response;
+  for (let i = 0; i < 10; i++) {
+    if (current.stop_reason !== "pause_turn") break;
+    console.log(`[CTW] ${label} iteration ${i + 1} — resuming...`);
+
+    messages.push({ role: "assistant", content: current.content });
+
+    const start = Date.now();
+    current = await streamBetaMessage({
+      ...SHARED_PARAMS,
+      max_tokens: 64000,
+      container: {
+        id: containerId || current.container?.id,
+        skills: SKILL_CONFIG,
+      },
+      messages,
+    });
+    logUsage(`${label} resume (${elapsed(start)})`, current);
+  }
+  return current;
+}
+
+function extractHtmlFromResponse(response: Anthropic.Beta.Messages.BetaMessage): string | null {
+  let html = "";
+  for (const block of response.content) {
+    if (block.type === "text") html += block.text;
+  }
+  html = html.trim();
+  if (html.startsWith("```")) {
+    html = html.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
+  }
+  if (html.startsWith("<!DOCTYPE") || html.startsWith("<html")) return html;
+  return null;
+}
+
+function extractTextFromResponse(response: Anthropic.Beta.Messages.BetaMessage): string {
+  let text = "";
+  for (const block of response.content) {
+    if (block.type === "text") text += block.text;
+  }
+  return text;
+}
+
+// ─── Batch 1: Parallel Sonnet 4.6 Calls ───
 
 /**
  * Extract the complete CSS design system from a reference website.
@@ -96,18 +194,23 @@ Write a complete CSS DESIGN SYSTEM SPECIFICATION covering:
 Be SPECIFIC with CSS values. Return as plain text.`;
 
   try {
+    console.log(`[CTW] Analyse: starting parallel Sonnet calls for ${url}`);
+    const analyseStart = Date.now();
+
     const [tokensResponse, designSystemResponse] = await Promise.all([
       anthropic.messages.create({
-        model: ANALYSIS_MODEL,
+        model: SONNET_MODEL,
         max_tokens: 1024,
         messages: [{ role: "user", content: tokensPrompt }],
       }),
       anthropic.messages.create({
-        model: ANALYSIS_MODEL,
+        model: SONNET_MODEL,
         max_tokens: 4096,
         messages: [{ role: "user", content: designSystemPrompt }],
       }),
     ]);
+
+    console.log(`[CTW] Analyse: done (${elapsed(analyseStart)}) | tokens: in=${tokensResponse.usage.input_tokens}+${designSystemResponse.usage.input_tokens} out=${tokensResponse.usage.output_tokens}+${designSystemResponse.usage.output_tokens}`);
 
     const tokensText = tokensResponse.content.find((b) => b.type === "text");
     if (!tokensText || tokensText.type !== "text") throw new Error("No tokens response");
@@ -194,11 +297,16 @@ Return ONLY valid JSON:
 Rules: Extract REAL data only. NZ English. Use null for unknown fields.`;
 
   try {
+    console.log(`[CTW] Extract: starting Sonnet call for ${url}`);
+    const extractStart = Date.now();
+
     const message = await anthropic.messages.create({
-      model: ANALYSIS_MODEL,
+      model: SONNET_MODEL,
       max_tokens: 4096,
       messages: [{ role: "user", content: prompt }],
     });
+
+    console.log(`[CTW] Extract: done (${elapsed(extractStart)}) | in=${message.usage.input_tokens} out=${message.usage.output_tokens}`);
 
     const textBlock = message.content.find((block) => block.type === "text");
     if (!textBlock || textBlock.type !== "text") throw new Error("No response");
@@ -237,11 +345,13 @@ Rules: Extract REAL data only. NZ English. Use null for unknown fields.`;
   }
 }
 
+// ─── Batch 2: Multi-Turn Opus Conversation (Plan → Generate → Refine) ───
+
 /**
- * Generate website using the Agent Skills API.
- * The frontend-design skill is loaded via the container parameter,
- * giving Claude access to the skill's design philosophy and guidelines.
- * Uses multi-turn: generate → self-critique → refine.
+ * Generate website using the 3-turn Opus pipeline with Agent Skills API.
+ * Turn 1: Plan (creative brief) — front-loads all context, gets cached
+ * Turn 2: Generate (build HTML) — short prompt, cached context
+ * Turn 3: Refine (polish) — screenshots or text fallback, cached context
  */
 export function createGenerateStream(
   businessInfo: BusinessInfo,
@@ -250,213 +360,206 @@ export function createGenerateStream(
 ) {
   return {
     async run(onChunk: (text: string) => void, onStatus: (status: string) => void): Promise<string> {
-      const userPrompt = getUserPrompt(businessInfo, designTokens, extractedContent);
-
-      // Check if we have a skill ID — if so, use Agent Skills API
       const useSkillsApi = !!SKILL_ID;
 
-      // Phase 1: Initial generation
-      onStatus("Designing your website...");
-
-      let initialHtml = "";
-
-      if (useSkillsApi) {
-        // Use Agent Skills API with the frontend-design skill
-        const response = await anthropic.beta.messages.create({
-          model: GENERATION_MODEL,
-          max_tokens: 64000,
-          betas: SKILLS_BETAS,
-          container: {
-            skills: [
-              {
-                type: "custom" as const,
-                skill_id: SKILL_ID,
-                version: "latest",
-              },
-            ],
-          },
-          messages: [
-            { role: "user", content: userPrompt },
-          ],
-          tools: [
-            { type: "code_execution_20250825" as const, name: "code_execution" },
-          ],
-        });
-
-        // Handle pause_turn for long operations
-        let currentResponse = response;
-        let messages: Anthropic.Beta.Messages.BetaMessageParam[] = [
-          { role: "user", content: userPrompt },
-        ];
-
-        for (let i = 0; i < 5; i++) {
-          if (currentResponse.stop_reason !== "pause_turn") break;
-
-          messages = [
-            ...messages,
-            { role: "assistant" as const, content: currentResponse.content },
-          ];
-
-          currentResponse = await anthropic.beta.messages.create({
-            model: GENERATION_MODEL,
-            max_tokens: 64000,
-            betas: SKILLS_BETAS,
-            container: {
-              id: currentResponse.container?.id,
-              skills: [
-                {
-                  type: "custom" as const,
-                  skill_id: SKILL_ID,
-                  version: "latest",
-                },
-              ],
-            },
-            messages,
-            tools: [
-              { type: "code_execution_20250825" as const, name: "code_execution" },
-            ],
-          });
-        }
-
-        // Extract the HTML from the response content
-        for (const block of currentResponse.content) {
-          if (block.type === "text") {
-            initialHtml += block.text;
-          }
-        }
-
-        // Send the full response as chunks for client progress
-        onChunk(initialHtml);
-      } else {
-        // Fallback: stream without skills API
-        const stream = anthropic.messages.stream({
-          model: GENERATION_MODEL,
-          max_tokens: 64000,
-          messages: [
-            { role: "user", content: userPrompt },
-          ],
-        });
-
-        stream.on("text", (text) => {
-          initialHtml += text;
-          onChunk(text);
-        });
-
-        await stream.finalMessage();
+      if (!useSkillsApi) {
+        console.log("[CTW] No SKILL_ID set — using fallback pipeline");
+        return runFallbackPipeline(businessInfo, designTokens, extractedContent, onChunk, onStatus);
       }
 
-      // Clean up
-      initialHtml = initialHtml.trim();
-      if (initialHtml.startsWith("```")) {
-        initialHtml = initialHtml.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
+      console.log(`[CTW] ═══ Starting 3-turn Opus pipeline ═══`);
+      console.log(`[CTW] Skill ID: ${SKILL_ID}`);
+      const pipelineStart = Date.now();
+
+      // ─── Turn 1: Plan ───
+      onStatus("Planning your website design...");
+      console.log("[CTW] Turn 1/3: Plan — sending creative brief request...");
+
+      const planPrompt = buildPlanPrompt(businessInfo, designTokens, extractedContent);
+      console.log(`[CTW] Plan prompt length: ~${Math.round(planPrompt.length / 4)} tokens`);
+      const messages: Anthropic.Beta.Messages.BetaMessageParam[] = [
+        { role: "user", content: planPrompt },
+      ];
+
+      let turnStart = Date.now();
+      let response = await streamBetaMessage({
+        ...SHARED_PARAMS,
+        max_tokens: 4096, // Plan only needs a short creative brief
+        container: { skills: SKILL_CONFIG },
+        messages,
+      });
+      logUsage(`Turn 1 Plan (${elapsed(turnStart)})`, response);
+      response = await handlePauseTurn(response, messages, undefined, "Turn 1 Plan");
+      const containerId = response.container?.id;
+      console.log(`[CTW] Container ID: ${containerId}`);
+
+      // ─── Turn 2: Generate ───
+      onStatus("Building your website...");
+      console.log("[CTW] Turn 2/3: Generate — building HTML...");
+
+      messages.push({ role: "assistant", content: response.content });
+      messages.push({ role: "user", content: GENERATE_PROMPT });
+
+      turnStart = Date.now();
+      response = await streamBetaMessage({
+        ...SHARED_PARAMS,
+        max_tokens: 64000, // Full HTML output
+        container: { id: containerId, skills: SKILL_CONFIG },
+        messages,
+      });
+      logUsage(`Turn 2 Generate (${elapsed(turnStart)})`, response);
+      response = await handlePauseTurn(response, messages, containerId, "Turn 2 Generate");
+
+      const initialHtml = extractHtmlFromResponse(response);
+      if (!initialHtml) {
+        console.log("[CTW] ⚠ No HTML extracted from Generate response");
+        const text = extractTextFromResponse(response);
+        onChunk(text);
+        return text;
       }
 
-      // Phase 2: Refinement pass
+      console.log(`[CTW] Generated HTML: ${initialHtml.length} chars`);
+      onChunk(initialHtml);
+
+      // ─── Turn 3: Refine ───
       onStatus("Polishing and refining the design...");
+      console.log("[CTW] Turn 3/3: Refine — polishing...");
 
+      messages.push({ role: "assistant", content: response.content });
+
+      // Try screenshots, fall back to text-based refinement
+      let desktopScreenshot: string | null = null;
+      let mobileScreenshot: string | null = null;
       try {
-        let refinedHtml = "";
-
-        if (useSkillsApi) {
-          const refinedResponse = await anthropic.beta.messages.create({
-            model: GENERATION_MODEL,
-            max_tokens: 64000,
-            betas: SKILLS_BETAS,
-            container: {
-              skills: [
-                {
-                  type: "custom" as const,
-                  skill_id: SKILL_ID,
-                  version: "latest",
-                },
-              ],
-            },
-            messages: [
-              { role: "user", content: userPrompt },
-              { role: "assistant", content: initialHtml },
-              { role: "user", content: getRefinementPrompt(initialHtml) },
-            ],
-            tools: [
-              { type: "code_execution_20250825" as const, name: "code_execution" },
-            ],
-          });
-
-          // Handle pause_turn
-          let currentResponse = refinedResponse;
-          let messages: Anthropic.Beta.Messages.BetaMessageParam[] = [
-            { role: "user", content: userPrompt },
-            { role: "assistant", content: initialHtml },
-            { role: "user", content: getRefinementPrompt(initialHtml) },
-          ];
-
-          for (let i = 0; i < 5; i++) {
-            if (currentResponse.stop_reason !== "pause_turn") break;
-
-            messages = [
-              ...messages,
-              { role: "assistant" as const, content: currentResponse.content },
-            ];
-
-            currentResponse = await anthropic.beta.messages.create({
-              model: GENERATION_MODEL,
-              max_tokens: 64000,
-              betas: SKILLS_BETAS,
-              container: {
-                id: currentResponse.container?.id,
-                skills: [
-                  {
-                    type: "custom" as const,
-                    skill_id: SKILL_ID,
-                    version: "latest",
-                  },
-                ],
-              },
-              messages,
-              tools: [
-                { type: "code_execution_20250825" as const, name: "code_execution" },
-              ],
-            });
-          }
-
-          for (const block of currentResponse.content) {
-            if (block.type === "text") {
-              refinedHtml += block.text;
-            }
-          }
+        console.log("[CTW] Taking screenshots (desktop + mobile)...");
+        const ssStart = Date.now();
+        const { takeScreenshot } = await import("./screenshot");
+        [desktopScreenshot, mobileScreenshot] = await Promise.all([
+          takeScreenshot(initialHtml, { width: 1280, height: 900 }),
+          takeScreenshot(initialHtml, { width: 375, height: 812 }),
+        ]);
+        if (desktopScreenshot && mobileScreenshot) {
+          console.log(`[CTW] Screenshots taken (${elapsed(ssStart)}) | desktop=${Math.round(desktopScreenshot.length / 1024)}KB mobile=${Math.round(mobileScreenshot.length / 1024)}KB`);
         } else {
-          // Fallback: standard API refinement
-          const refinedMessage = await anthropic.messages.create({
-            model: GENERATION_MODEL,
-            max_tokens: 64000,
-            messages: [
-              { role: "user", content: userPrompt },
-              { role: "assistant", content: initialHtml },
-              { role: "user", content: getRefinementPrompt(initialHtml) },
-            ],
-          });
-
-          for (const block of refinedMessage.content) {
-            if (block.type === "text") {
-              refinedHtml += block.text;
-            }
-          }
-        }
-
-        refinedHtml = refinedHtml.trim();
-        if (refinedHtml.startsWith("```")) {
-          refinedHtml = refinedHtml.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
-        }
-
-        if (refinedHtml.startsWith("<!DOCTYPE") || refinedHtml.startsWith("<html")) {
-          return refinedHtml;
+          console.log(`[CTW] Screenshots returned null (${elapsed(ssStart)}), using text fallback`);
         }
       } catch (err) {
-        console.error("Refinement failed, using initial generation:", err);
+        console.log(`[CTW] Screenshots failed, using text fallback:`, err instanceof Error ? err.message : err);
       }
 
+      if (desktopScreenshot && mobileScreenshot) {
+        // Screenshot-based refinement
+        messages.push({
+          role: "user",
+          content: [
+            { type: "text", text: "Here is the desktop view of the website you generated:" },
+            { type: "image", source: { type: "base64", media_type: "image/png", data: desktopScreenshot } },
+            { type: "text", text: "Here is the mobile view:" },
+            { type: "image", source: { type: "base64", media_type: "image/png", data: mobileScreenshot } },
+            { type: "text", text: REFINE_PROMPT },
+          ],
+        });
+      } else {
+        console.log("[CTW] Using text-based refinement (no screenshots)");
+        messages.push({
+          role: "user",
+          content: getTextRefinementPrompt(initialHtml),
+        });
+      }
+
+      try {
+        turnStart = Date.now();
+        response = await streamBetaMessage({
+          ...SHARED_PARAMS,
+          max_tokens: 64000,
+          container: { id: containerId, skills: SKILL_CONFIG },
+          messages,
+        });
+        logUsage(`Turn 3 Refine (${elapsed(turnStart)})`, response);
+        response = await handlePauseTurn(response, messages, containerId, "Turn 3 Refine");
+
+        const refinedHtml = extractHtmlFromResponse(response);
+        if (refinedHtml) {
+          console.log(`[CTW] Refined HTML: ${refinedHtml.length} chars (${refinedHtml.length > initialHtml.length ? "+" : ""}${refinedHtml.length - initialHtml.length} vs initial)`);
+          console.log(`[CTW] ═══ Pipeline complete (${elapsed(pipelineStart)}) ═══`);
+          return refinedHtml;
+        }
+        console.log("[CTW] ⚠ No HTML extracted from Refine response, using initial");
+      } catch (err) {
+        console.error("[CTW] Refinement failed, using initial generation:", err);
+      }
+
+      console.log(`[CTW] ═══ Pipeline complete (${elapsed(pipelineStart)}) ═══`);
       return initialHtml;
     },
   };
+}
+
+/**
+ * Fallback pipeline when no SKILL_ID is set.
+ * Combines plan + generate into a single Opus call, then refines.
+ */
+async function runFallbackPipeline(
+  businessInfo: BusinessInfo,
+  designTokens: ExtractedDesignTokens,
+  extractedContent: ExtractedContent | undefined,
+  onChunk: (text: string) => void,
+  onStatus: (status: string) => void,
+): Promise<string> {
+  onStatus("Designing your website...");
+
+  const planPrompt = buildPlanPrompt(businessInfo, designTokens, extractedContent);
+  const combinedPrompt = `${planPrompt}\n\nSkip the creative brief — go straight to building the complete website.\n\n${GENERATE_PROMPT}`;
+
+  let initialHtml = "";
+  const stream = anthropic.messages.stream({
+    model: OPUS_MODEL,
+    max_tokens: 64000,
+    messages: [{ role: "user", content: combinedPrompt }],
+  });
+
+  stream.on("text", (text) => {
+    initialHtml += text;
+    onChunk(text);
+  });
+
+  await stream.finalMessage();
+
+  initialHtml = initialHtml.trim();
+  if (initialHtml.startsWith("```")) {
+    initialHtml = initialHtml.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
+  }
+
+  // Refine pass
+  onStatus("Polishing and refining the design...");
+
+  try {
+    const refinedMessage = await anthropic.messages.create({
+      model: OPUS_MODEL,
+      max_tokens: 64000,
+      messages: [
+        { role: "user", content: combinedPrompt },
+        { role: "assistant", content: initialHtml },
+        { role: "user", content: getTextRefinementPrompt(initialHtml) },
+      ],
+    });
+
+    let refinedHtml = "";
+    for (const block of refinedMessage.content) {
+      if (block.type === "text") refinedHtml += block.text;
+    }
+    refinedHtml = refinedHtml.trim();
+    if (refinedHtml.startsWith("```")) {
+      refinedHtml = refinedHtml.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
+    }
+    if (refinedHtml.startsWith("<!DOCTYPE") || refinedHtml.startsWith("<html")) {
+      return refinedHtml;
+    }
+  } catch (err) {
+    console.error("Refinement failed, using initial generation:", err);
+  }
+
+  return initialHtml;
 }
 
 /**
