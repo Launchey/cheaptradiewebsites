@@ -1,8 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Serif_Display, Outfit } from "next/font/google";
 import "./globals.css";
-import Header from "@/components/layout/Header";
-import Footer from "@/components/layout/Footer";
 
 const dmSerifDisplay = DM_Serif_Display({
   variable: "--font-heading",
@@ -19,7 +17,7 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "CheapTradieWebsites — Professional Websites for NZ Tradies | From $500",
   description:
-    "Get a professional website for your trade business in minutes. Built by AI, designed for NZ builders, electricians, plumbers & more. Free preview, $500 to keep.",
+    "Get a professional website for your trade business in minutes. Designed for NZ builders, electricians, plumbers & more. Free preview, $500 to keep.",
   keywords: [
     "tradie website",
     "NZ tradesman website",
@@ -59,9 +57,7 @@ export default function RootLayout({
   return (
     <html lang="en-NZ" className="scroll-smooth">
       <body className={`${dmSerifDisplay.variable} ${outfit.variable} antialiased`}>
-        <Header />
-        <main>{children}</main>
-        <Footer />
+        {children}
       </body>
     </html>
   );
