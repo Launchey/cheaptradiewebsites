@@ -88,15 +88,47 @@ async function handlePauseTurn(
 }
 
 function extractHtmlFromResponse(response: Anthropic.Beta.Messages.BetaMessage): string | null {
-  let html = "";
+  // 1. Check code execution stdout (Opus writes HTML via code execution)
   for (const block of response.content) {
-    if (block.type === "text") html += block.text;
+    const b = block as Record<string, unknown>;
+    if (b.type === "code_execution_tool_result" || b.type === "bash_code_execution_tool_result") {
+      const result = b.content as Record<string, unknown>;
+      if (typeof result?.stdout === "string") {
+        const stdout = (result.stdout as string).trim();
+        if (stdout.startsWith("<!DOCTYPE") || stdout.startsWith("<html")) {
+          console.log(`[CTW] Extracted HTML from code execution stdout (${stdout.length} chars)`);
+          return stdout;
+        }
+        // HTML might be buried after other stdout — find it
+        const idx = stdout.indexOf("<!DOCTYPE");
+        if (idx !== -1) {
+          const extracted = stdout.slice(idx).trim();
+          console.log(`[CTW] Extracted HTML from code execution stdout at offset ${idx} (${extracted.length} chars)`);
+          return extracted;
+        }
+      }
+    }
   }
-  html = html.trim();
-  if (html.startsWith("```")) {
-    html = html.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
+
+  // 2. Check text blocks (non-code-execution path)
+  let text = "";
+  for (const block of response.content) {
+    if (block.type === "text") text += block.text;
   }
-  if (html.startsWith("<!DOCTYPE") || html.startsWith("<html")) return html;
+  text = text.trim();
+  if (text.startsWith("```")) {
+    text = text.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
+  }
+  if (text.startsWith("<!DOCTYPE") || text.startsWith("<html")) return text;
+
+  // 3. Last resort — find HTML anywhere in text blocks
+  const idx = text.indexOf("<!DOCTYPE");
+  if (idx !== -1) {
+    const extracted = text.slice(idx).trim();
+    console.log(`[CTW] Extracted HTML from text at offset ${idx} (${extracted.length} chars)`);
+    return extracted;
+  }
+
   return null;
 }
 
@@ -251,27 +283,30 @@ Be SPECIFIC with CSS values. Return as plain text.`;
 }
 
 /**
- * Extract business content from a tradie's existing website.
+ * Extract business content from a tradie's multi-page website.
  */
 export async function extractContentWithClaude(
-  html: string,
-  url: string,
+  pages: { url: string; html: string }[],
+  baseUrl: string,
   imageUrls: { src: string; alt: string; type: string }[]
 ): Promise<ExtractedContent> {
-  const cleaned = html
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
-    .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, "");
+  // Build a combined snippet from all crawled pages
+  const pageSnippets = pages.map((page) => {
+    const cleaned = page.html
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<noscript[^>]*>[\s\S]*?<\/noscript>/gi, "");
+    const path = new URL(page.url).pathname;
+    // Give homepage more space, sub-pages less
+    const limit = page.url === baseUrl ? 15000 : 8000;
+    return `<page url="${path}">\n${cleaned.slice(0, limit)}\n</page>`;
+  });
 
-  const htmlSnippet = cleaned.slice(0, 30000);
+  const prompt = `Extract ALL business information from this tradie's website. We have crawled multiple pages.
 
-  const prompt = `Extract business information from this NZ tradie's website as JSON.
+Website: ${baseUrl}
 
-URL: ${url}
-
-<website_html>
-${htmlSnippet}
-</website_html>
+${pageSnippets.join("\n\n")}
 
 <detected_images>
 ${imageUrls.map((img) => `- ${img.type}: ${img.src} (alt: "${img.alt}")`).join("\n")}
@@ -283,26 +318,35 @@ Return ONLY valid JSON:
   "tagline": "string or null",
   "tradeType": "builder|electrician|plumber|drainlayer|painter|roofer|landscaper|concrete|fencer|tiler|gasfitter|plasterer|demolition|earthworks|other",
   "location": "town/city",
-  "region": "NZ region",
+  "region": "NZ region or country",
   "phone": "phone number or null",
   "email": "email or null",
-  "aboutText": "combined about text paragraphs",
-  "services": ["specific service names"],
+  "address": "full street address or null",
+  "aboutText": "combined about text from all pages — preserve their authentic voice",
+  "services": ["ONLY real services listed on the website — never invent services"],
+  "projects": [{"title": "project name", "description": "brief description", "imageUrl": "image URL if found or null"}],
   "testimonials": [{"text": "quote", "name": "name", "location": "location or null"}],
   "socialLinks": [{"platform": "name", "url": "url"}],
   "yearsExperience": null or number,
-  "rawTextSummary": "2-3 paragraph summary of all important website text"
+  "logoUrl": "URL of the business logo or null",
+  "heroImageUrl": "URL of the main hero/banner image or null",
+  "images": [{"src": "full URL", "alt": "description", "type": "logo|hero|gallery|team|project|other", "page": "which page it was found on"}],
+  "rawTextSummary": "3-4 paragraph summary of ALL important text across all pages"
 }
 
-Rules: Extract REAL data only. NZ English. Use null for unknown fields.`;
+Rules:
+- Extract REAL data only from what's actually on the pages. NEVER invent or hallucinate services, projects, or content.
+- Include ALL images found with their full URLs — these will be used in the generated website.
+- Identify the logo (usually top-left of header) and hero image (large banner image) specifically.
+- NZ English. Use null for unknown fields.`;
 
   try {
-    console.log(`[CTW] Extract: starting Sonnet call for ${url}`);
+    console.log(`[CTW] Extract: starting Sonnet call for ${baseUrl} (${pages.length} pages)`);
     const extractStart = Date.now();
 
     const message = await anthropic.messages.create({
       model: SONNET_MODEL,
-      max_tokens: 4096,
+      max_tokens: 8192,
       messages: [{ role: "user", content: prompt }],
     });
 
@@ -331,13 +375,35 @@ Rules: Extract REAL data only. NZ English. Use null for unknown fields.`;
       businessInfo.services = parsed.services;
     }
 
+    // Merge Claude-classified images with regex-detected ones
+    const classifiedImages: ExtractedImage[] = Array.isArray(parsed.images)
+      ? parsed.images.map((img: { src: string; alt: string; type: string }) => ({
+          src: img.src,
+          alt: img.alt || "",
+          type: img.type || "other",
+        }))
+      : imageUrls as ExtractedImage[];
+
+    // Ensure logo and hero are in the image list if Claude found them
+    if (parsed.logoUrl && !classifiedImages.some((img: ExtractedImage) => img.src === parsed.logoUrl)) {
+      classifiedImages.unshift({ src: parsed.logoUrl, alt: "Logo", type: "logo" });
+    }
+    if (parsed.heroImageUrl && !classifiedImages.some((img: ExtractedImage) => img.src === parsed.heroImageUrl)) {
+      classifiedImages.unshift({ src: parsed.heroImageUrl, alt: "Hero", type: "hero" });
+    }
+
+    console.log(`[CTW] Extract: ${classifiedImages.length} images, ${parsed.services?.length || 0} services, ${parsed.projects?.length || 0} projects`);
+
     return {
       businessInfo,
-      images: imageUrls as ExtractedImage[],
+      images: classifiedImages,
       rawText: parsed.rawTextSummary || "",
       services: parsed.services || [],
       testimonials: parsed.testimonials || [],
       socialLinks: parsed.socialLinks || [],
+      projects: parsed.projects || [],
+      logoUrl: parsed.logoUrl || null,
+      heroImageUrl: parsed.heroImageUrl || null,
     };
   } catch (err) {
     console.error("Claude content extraction failed:", err);

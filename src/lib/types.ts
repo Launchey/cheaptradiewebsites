@@ -73,6 +73,9 @@ export interface ExtractedContent {
   services?: string[];
   testimonials?: { text: string; name: string; location?: string }[];
   socialLinks?: { platform: string; url: string }[];
+  projects?: { title: string; description: string; imageUrl?: string | null }[];
+  logoUrl?: string | null;
+  heroImageUrl?: string | null;
 }
 
 export interface GeneratedSite {

@@ -53,6 +53,13 @@ const extractedContentSchema = z.object({
     platform: z.string(),
     url: z.string(),
   })).optional(),
+  projects: z.array(z.object({
+    title: z.string(),
+    description: z.string(),
+    imageUrl: z.string().nullable().optional(),
+  })).optional(),
+  logoUrl: z.string().nullable().optional(),
+  heroImageUrl: z.string().nullable().optional(),
 }).optional();
 
 const schema = z.object({

@@ -25,13 +25,22 @@ export function buildPlanPrompt(
   let extractedSection = "";
   if (extractedContent) {
     extractedSection = `
-### Extracted Content (from existing website)
+### Extracted Content (from existing website — crawled multiple pages)
 
 ${extractedContent.rawText ? `ORIGINAL WEBSITE TEXT — preserve their authentic voice:
 ${extractedContent.rawText}` : ""}
 
-${extractedContent.images.length > 0 ? `IMAGES (create CSS gradient/pattern visual placeholders inspired by these — do NOT use the URLs):
-${extractedContent.images.slice(0, 6).map((img) => `- [${img.type}] ${img.alt || "image"}`).join("\n")}` : ""}
+${extractedContent.logoUrl ? `LOGO — Use this actual image in the header:
+${extractedContent.logoUrl}` : ""}
+
+${extractedContent.heroImageUrl ? `HERO IMAGE — Use this actual image as the hero background:
+${extractedContent.heroImageUrl}` : ""}
+
+${extractedContent.images.length > 0 ? `IMAGES — Use these REAL image URLs from their website (as <img> tags or CSS background-image):
+${extractedContent.images.slice(0, 20).map((img) => `- [${img.type}] ${img.src} (alt: "${img.alt || "image"}")`).join("\n")}` : ""}
+
+${extractedContent.projects && extractedContent.projects.length > 0 ? `PROJECTS — Real projects from their website (include a projects/portfolio section):
+${extractedContent.projects.map((p) => `- ${p.title}: ${p.description}${p.imageUrl ? ` | Image: ${p.imageUrl}` : ""}`).join("\n")}` : ""}
 
 ${extractedContent.socialLinks && extractedContent.socialLinks.length > 0 ? `SOCIAL MEDIA (include in footer):
 ${extractedContent.socialLinks.map((s) => `- ${s.platform}: ${s.url}`).join("\n")}` : ""}
@@ -57,16 +66,30 @@ Apply this design system:
 
 ### Rendering Target
 - Single self-contained HTML file, all CSS and JS inline
-- Google Fonts via <link> (ONLY allowed external resource)
+- Google Fonts via <link> and customer image URLs are the ONLY allowed external resources
 - Vanilla HTML5, CSS3, JavaScript ES2020+
 - CSS Grid, Flexbox, clamp(), @keyframes, IntersectionObserver
 - Inline SVGs for all icons
 - NO frameworks, NO external libraries, NO CDN resources
 
+### Image Rules
+- USE the real image URLs from the customer's website (logo, hero, projects, gallery)
+- The hero section MUST use the provided hero image URL as a background or <img>
+- The header MUST include the customer's logo if one was provided
+- Project/gallery images should use the real URLs provided
+- For any section where no real image exists, use CSS gradients or patterns as placeholders
+
+### Colour Rules — CRITICAL
+- Use ONLY the colours from the Design Tokens below. These were extracted from the reference website.
+- NEVER introduce purple, violet, or any colour not in the provided palette.
+- If you need additional shades, derive them from the provided colours (lighter/darker variants).
+- The reference website's colour scheme must be followed strictly.
+
 ### Content Requirements
 - NZ English spelling throughout
 - Phone numbers prominent and clickable (tel: links)
 - Emails use mailto: links
+- ONLY include services that are listed in the extracted data. NEVER hallucinate services.
 - Each service gets a unique inline SVG icon with real description
 - Footer MUST include: Website by CheapTradieWebsites.co.nz link
 - Write as this tradie — confident, authentic, local NZ voice
@@ -123,6 +146,9 @@ Remember:
 - All CSS and JS inline
 - Self-critique your output before returning — check for generic patterns,
   missing animations, weak typography, flat backgrounds
+- IMPORTANT: When you are finished, you MUST print the complete final HTML to stdout
+  using print() or cat. The stdout output is how we capture the result.
+  Do NOT just write it to a file — you must print it.
 - No markdown, no code fences, no explanation`;
 
 /**
@@ -148,6 +174,7 @@ Specific checklist:
 8. Details — decorative elements, focus states, active nav states
 
 Output the COMPLETE improved HTML. Start with <!DOCTYPE html>.
+IMPORTANT: Print the final HTML to stdout using print() or cat so we can capture it.
 No commentary, no markdown.`;
 
 /**

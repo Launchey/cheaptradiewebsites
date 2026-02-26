@@ -3,28 +3,75 @@ import { z } from "zod";
 import { extractContentWithClaude } from "@/lib/claude";
 import type { ExtractedImage } from "@/lib/types";
 
+export const maxDuration = 60; // Multi-page crawl + Sonnet extraction
+
 const schema = z.object({
   url: z.string().url("Please enter a valid website address"),
 });
+
+const FETCH_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (compatible; CheapTradieWebsites/1.0)",
+};
+
+/** Fetch a single page with timeout. Returns null on failure. */
+async function fetchPage(url: string, timeoutMs = 10000): Promise<string | null> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, { signal: controller.signal, headers: FETCH_HEADERS });
+    if (!res.ok) return null;
+    return await res.text();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/** Parse nav links from homepage and return internal page URLs. */
+function discoverInternalLinks(html: string, baseUrl: string): string[] {
+  const base = new URL(baseUrl);
+  const seen = new Set<string>([base.pathname.replace(/\/$/, "") || "/"]);
+  const links: string[] = [];
+
+  // Match href values from <a> tags inside <nav>, <header>, or common menu patterns
+  const linkRegex = /<a[^>]+href=["']([^"'#]+)["'][^>]*>/gi;
+  let match;
+  while ((match = linkRegex.exec(html)) !== null) {
+    try {
+      const resolved = new URL(match[1], baseUrl);
+      // Only same-origin pages
+      if (resolved.origin !== base.origin) continue;
+      const path = resolved.pathname.replace(/\/$/, "") || "/";
+      if (seen.has(path)) continue;
+      // Skip assets, anchors, files
+      if (/\.(pdf|jpg|jpeg|png|gif|svg|css|js|zip|doc|mp4)$/i.test(path)) continue;
+      seen.add(path);
+      links.push(resolved.href);
+    } catch {
+      continue;
+    }
+  }
+
+  // Prioritise common tradie pages, cap at 8
+  const priority = ["contact", "about", "service", "project", "portfolio", "gallery", "team", "testimonial"];
+  links.sort((a, b) => {
+    const aP = priority.findIndex((p) => a.toLowerCase().includes(p));
+    const bP = priority.findIndex((p) => b.toLowerCase().includes(p));
+    return (aP === -1 ? 99 : aP) - (bP === -1 ? 99 : bP);
+  });
+
+  return links.slice(0, 8);
+}
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { url } = schema.parse(body);
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 20000);
-
-    let html: string;
-    try {
-      const res = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          "User-Agent": "Mozilla/5.0 (compatible; CheapTradieWebsites/1.0)",
-        },
-      });
-      html = await res.text();
-    } catch {
+    // 1. Fetch the homepage
+    const homepage = await fetchPage(url, 15000);
+    if (!homepage) {
       return NextResponse.json(
         {
           businessInfo: {},
@@ -37,24 +84,43 @@ export async function POST(request: Request) {
         },
         { status: 200 }
       );
-    } finally {
-      clearTimeout(timeout);
     }
 
-    // Extract images from HTML (regex-based — fast and reliable)
-    const imageUrls = extractImages(html, url);
+    // 2. Discover internal links and fetch them in parallel
+    const internalLinks = discoverInternalLinks(homepage, url);
+    console.log(`[CTW] Extract: found ${internalLinks.length} internal pages:`, internalLinks.map(u => new URL(u).pathname));
 
-    // Use Claude to intelligently extract all business content
+    const subPages = await Promise.all(internalLinks.map((link) => fetchPage(link)));
+    const pages: { url: string; html: string }[] = [{ url, html: homepage }];
+    for (let i = 0; i < internalLinks.length; i++) {
+      if (subPages[i]) {
+        pages.push({ url: internalLinks[i], html: subPages[i]! });
+      }
+    }
+    console.log(`[CTW] Extract: fetched ${pages.length} pages total`);
+
+    // 3. Extract images from ALL pages
+    const allImages: ExtractedImage[] = [];
+    const seenSrcs = new Set<string>();
+    for (const page of pages) {
+      for (const img of extractImages(page.html, page.url)) {
+        if (!seenSrcs.has(img.src)) {
+          seenSrcs.add(img.src);
+          allImages.push(img);
+        }
+      }
+    }
+
+    // 4. Use Claude to extract content from all pages
     try {
-      const extracted = await extractContentWithClaude(html, url, imageUrls);
+      const extracted = await extractContentWithClaude(pages, url, allImages);
       return NextResponse.json(extracted);
     } catch {
-      // Fall back to basic regex extraction
-      const businessInfo = extractBusinessInfoFallback(html);
-      const rawText = extractRawText(html);
+      const businessInfo = extractBusinessInfoFallback(homepage);
+      const rawText = extractRawText(homepage);
       return NextResponse.json({
         businessInfo,
-        images: imageUrls,
+        images: allImages,
         rawText,
         services: [],
         testimonials: [],
@@ -77,30 +143,27 @@ export async function POST(request: Request) {
 
 function extractImages(html: string, baseUrl: string): ExtractedImage[] {
   const images: ExtractedImage[] = [];
-  const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*(?:alt=["']([^"']*?)["'])?[^>]*>/gi;
-  let match;
   const seen = new Set<string>();
 
-  while ((match = imgRegex.exec(html)) !== null && images.length < 10) {
-    let src = match[1];
-    const alt = match[2] || "";
-
+  function addImage(src: string, alt: string, type: ExtractedImage["type"]) {
+    if (images.length >= 30) return;
     // Skip tiny images, icons, trackers
-    if (src.includes("1x1") || src.includes("pixel") || src.includes("tracking") || src.endsWith(".svg") || src.includes("data:image/gif")) {
-      continue;
-    }
-
+    if (src.includes("1x1") || src.includes("pixel") || src.includes("tracking") || src.includes("data:image/gif")) return;
     // Resolve relative URLs
     try {
       src = new URL(src, baseUrl).href;
-    } catch {
-      continue;
-    }
-
-    if (seen.has(src)) continue;
+    } catch { return; }
+    if (seen.has(src)) return;
     seen.add(src);
+    images.push({ src, alt, type });
+  }
 
-    // Guess image type
+  // 1. <img> tags
+  const imgRegex = /<img[^>]+src=["']([^"']+)["'][^>]*(?:alt=["']([^"']*?)["'])?[^>]*>/gi;
+  let match;
+  while ((match = imgRegex.exec(html)) !== null) {
+    const src = match[1];
+    const alt = match[2] || "";
     const lowerAlt = alt.toLowerCase();
     const lowerSrc = src.toLowerCase();
     let type: ExtractedImage["type"] = "other";
@@ -108,8 +171,21 @@ function extractImages(html: string, baseUrl: string): ExtractedImage[] {
     else if (lowerAlt.includes("hero") || lowerSrc.includes("hero") || lowerSrc.includes("banner")) type = "hero";
     else if (lowerAlt.includes("team") || lowerSrc.includes("team") || lowerSrc.includes("staff")) type = "team";
     else if (lowerAlt.includes("gallery") || lowerSrc.includes("gallery") || lowerSrc.includes("project")) type = "gallery";
+    addImage(src, alt, type);
+  }
 
-    images.push({ src, alt, type });
+  // 2. CSS background-image URLs (catches hero images that aren't in <img> tags)
+  const bgRegex = /background(?:-image)?:\s*url\(["']?([^"')]+)["']?\)/gi;
+  while ((match = bgRegex.exec(html)) !== null) {
+    addImage(match[1], "background image", "hero");
+  }
+
+  // 3. Squarespace/common CMS data-src and data-image attributes
+  const dataSrcRegex = /data-(?:src|image|bg|background)=["']([^"']+)["']/gi;
+  while ((match = dataSrcRegex.exec(html)) !== null) {
+    if (/\.(jpg|jpeg|png|webp)/i.test(match[1])) {
+      addImage(match[1], "image", "other");
+    }
   }
 
   return images;
