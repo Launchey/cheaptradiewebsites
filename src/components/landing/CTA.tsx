@@ -43,7 +43,7 @@ export default function CTA() {
             website that makes your business look as good as your work.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button href="#hero" size="lg" variant="primary">
+            <Button href="/builder" size="lg" variant="primary">
               Get Your Free Preview
             </Button>
             <Button href="#how-it-works" variant="outline" size="lg">

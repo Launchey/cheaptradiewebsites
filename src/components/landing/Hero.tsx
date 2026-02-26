@@ -98,11 +98,19 @@ export default function Hero() {
                   placeholder="Paste a website you like the look of..."
                   className="flex-1 text-base py-3 outline-none bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-muted)]"
                 />
-                <Button size="md" className="shrink-0 hidden sm:inline-flex">
+                <Button
+                  size="md"
+                  className="shrink-0 hidden sm:inline-flex"
+                  href={url ? `/builder?url=${encodeURIComponent(url.trim().startsWith("http") ? url.trim() : "https://" + url.trim())}` : "/builder"}
+                >
                   Build My Site
                 </Button>
               </div>
-              <Button size="md" className="sm:hidden w-full mt-3">
+              <Button
+                size="md"
+                className="sm:hidden w-full mt-3"
+                href={url ? `/builder?url=${encodeURIComponent(url.trim().startsWith("http") ? url.trim() : "https://" + url.trim())}` : "/builder"}
+              >
                 Build My Site
               </Button>
             </div>

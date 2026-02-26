@@ -6,6 +6,7 @@ const templates = [
   {
     name: "Solid Ground",
     trade: "Builder / Construction",
+    templateKey: "builder",
     color: "#7A6652",
     accent: "#C4A882",
     dark: "#4A3D30",
@@ -13,6 +14,7 @@ const templates = [
   {
     name: "Bright Spark",
     trade: "Electrician",
+    templateKey: "electrician",
     color: "#3D5A6E",
     accent: "#D4A84B",
     dark: "#2A3E4D",
@@ -20,6 +22,7 @@ const templates = [
   {
     name: "Clear Flow",
     trade: "Plumber / Drainlayer",
+    templateKey: "plumber",
     color: "#2E6066",
     accent: "#6AABB8",
     dark: "#1D4248",
@@ -27,6 +30,7 @@ const templates = [
   {
     name: "True Level",
     trade: "Painter / Decorator",
+    templateKey: "painter",
     color: "#6B5B6E",
     accent: "#D4A07A",
     dark: "#4A3D4D",
@@ -34,6 +38,7 @@ const templates = [
   {
     name: "Iron Edge",
     trade: "Roofer / Steel",
+    templateKey: "roofer",
     color: "#4F4A47",
     accent: "#B8614E",
     dark: "#332F2D",
@@ -41,6 +46,7 @@ const templates = [
   {
     name: "Green Acres",
     trade: "Landscaper",
+    templateKey: "landscaper",
     color: "#4A6B4F",
     accent: "#8BB88F",
     dark: "#344A37",
@@ -97,9 +103,10 @@ export default function Templates() {
         {/* Template grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {templates.map((template, i) => (
-            <div
+            <a
+              href={`/builder?template=${template.templateKey}`}
               key={template.name}
-              className={`reveal reveal-delay-${(i % 4) + 1} group cursor-pointer`}
+              className={`reveal reveal-delay-${(i % 4) + 1} group cursor-pointer block`}
             >
               <div className="bg-[var(--bg-card)] rounded-[var(--radius-lg)] overflow-hidden border border-[var(--border)] transition-all duration-500 hover:shadow-[var(--shadow-xl)] hover:-translate-y-2">
                 {/* Fake browser chrome */}
@@ -195,7 +202,7 @@ export default function Templates() {
                   </div>
                 </div>
               </div>
-            </div>
+            </a>
           ))}
         </div>
       </div>

@@ -123,7 +123,7 @@ export default function Pricing() {
             </ul>
 
             {/* CTA */}
-            <Button href="#hero" size="lg" className="w-full text-center">
+            <Button href="/builder" size="lg" className="w-full text-center">
               Get Your Free Preview
             </Button>
 
