@@ -12,7 +12,7 @@ export async function generateWebsite(
 ): Promise<string> {
   const message = await anthropic.messages.create({
     model: "claude-sonnet-4-20250514",
-    max_tokens: 16000,
+    max_tokens: 64000,
     system: getSystemPrompt(),
     messages: [
       {
@@ -36,7 +36,7 @@ export function createGenerateStream(
 ) {
   return anthropic.messages.stream({
     model: "claude-sonnet-4-20250514",
-    max_tokens: 16000,
+    max_tokens: 64000,
     system: getSystemPrompt(),
     messages: [
       {
