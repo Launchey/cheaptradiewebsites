@@ -28,6 +28,13 @@ export default function Step1UrlInput({ onComplete, initialUrl = "" }: Step1Prop
       return;
     }
 
+    // Auto-add https:// if missing
+    let url = referenceUrl.trim();
+    if (!/^https?:\/\//i.test(url)) {
+      url = "https://" + url;
+      setReferenceUrl(url);
+    }
+
     setError("");
     setIsAnalysing(true);
 
@@ -35,7 +42,7 @@ export default function Step1UrlInput({ onComplete, initialUrl = "" }: Step1Prop
       const analyseRes = await fetch("/api/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: referenceUrl }),
+        body: JSON.stringify({ url }),
       });
 
       const tokens = await analyseRes.json();
@@ -48,12 +55,17 @@ export default function Step1UrlInput({ onComplete, initialUrl = "" }: Step1Prop
       // If they also have an existing website, extract from it
       let prefill: Partial<BusinessInfo> | undefined;
       if (existingUrl) {
+        let extUrl = existingUrl.trim();
+        if (!/^https?:\/\//i.test(extUrl)) {
+          extUrl = "https://" + extUrl;
+          setExistingUrl(extUrl);
+        }
         setIsExtracting(true);
         try {
           const extractRes = await fetch("/api/extract", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ url: existingUrl }),
+            body: JSON.stringify({ url: extUrl }),
           });
           const extracted = await extractRes.json();
           prefill = extracted.businessInfo;
