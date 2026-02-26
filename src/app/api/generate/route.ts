@@ -65,39 +65,36 @@ export async function POST(request: Request) {
     const { businessInfo, designTokens, extractedContent } = schema.parse(body);
 
     const siteId = generateSiteId();
-
-    // Stream the response
     const encoder = new TextEncoder();
+
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          const messageStream = createGenerateStream(
+          const generator = createGenerateStream(
             businessInfo as BusinessInfo,
             designTokens as ExtractedDesignTokens,
             extractedContent as ExtractedContent | undefined
           );
 
-          let fullHtml = "";
+          const finalHtml = await generator.run(
+            // onChunk — stream progress to client
+            (text) => {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "chunk", text })}\n\n`)
+              );
+            },
+            // onStatus — send status updates to client
+            (status) => {
+              controller.enqueue(
+                encoder.encode(`data: ${JSON.stringify({ type: "status", message: status })}\n\n`)
+              );
+            }
+          );
 
-          messageStream.on("text", (text) => {
-            fullHtml += text;
-            controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify({ type: "chunk", text })}\n\n`)
-            );
-          });
-
-          await messageStream.finalMessage();
-
-          // Clean up the HTML — strip any markdown code fences Claude might add
-          fullHtml = fullHtml.trim();
-          if (fullHtml.startsWith("```")) {
-            fullHtml = fullHtml.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
-          }
-
-          // Store the generated site
+          // Store the final (refined) HTML
           saveSite({
             id: siteId,
-            html: fullHtml,
+            html: finalHtml,
             businessInfo: businessInfo as BusinessInfo,
             designTokens: designTokens as ExtractedDesignTokens,
             createdAt: new Date().toISOString(),

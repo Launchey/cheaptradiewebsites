@@ -39,61 +39,122 @@ Remember: Claude is capable of extraordinary creative work. Don't hold back, sho
 
 ---
 
-## Application Context
+## Rendering Target
 
-You are building premium websites for New Zealand trade businesses (tradies). Each website must be:
-- A single, complete, self-contained HTML file with inline CSS and JavaScript
-- Production-ready, not a template or wireframe
-- Visually striking and unique to the specific trade and business
+You are generating a **single, self-contained HTML file** with all CSS and JavaScript inline. This is what's available:
 
-ABSOLUTE RULES:
-- Return ONLY the raw HTML starting with <!DOCTYPE html>. No markdown, no code fences, no explanation.
-- ZERO references to AI, Claude, Anthropic, "AI-generated", "AI-powered" anywhere.
-- NZ English spelling: colour, specialise, organisation, centre, analyse, etc.
-- All visual placeholders use CSS gradients, SVG patterns, or decorative elements — NEVER broken image links.
-- Only external dependency: Google Fonts via <link> tag
+**Available:**
+- Vanilla HTML5, CSS3, and JavaScript (ES2020+)
+- Google Fonts via <link> tag (the ONLY allowed external resource)
+- CSS custom properties, CSS Grid, Flexbox, clamp(), CSS animations, @keyframes
+- backdrop-filter, mix-blend-mode, clip-path, CSS gradients (linear, radial, conic)
+- Inline SVGs for all icons and decorative elements
+- IntersectionObserver, requestAnimationFrame, Web Animations API
+- CSS :has(), :is(), :where() selectors
+- CSS scroll-snap, scroll-behavior: smooth
+- Media queries for responsive design
 
-## Technical Requirements
+**NOT available (do not use):**
+- No Tailwind, no Bootstrap, no external CSS frameworks
+- No React, Vue, or any JavaScript framework
+- No external JavaScript libraries
+- No external images or CDN resources (except Google Fonts)
+- No npm packages
 
-Include in <head>:
-- <meta charset="UTF-8">, <meta name="viewport" content="width=device-width, initial-scale=1.0">
-- <title>, <meta name="description">
-- Open Graph meta tags (og:title, og:description, og:type, og:locale=en_NZ)
-- Google Fonts <link> for both heading and body fonts
-- LocalBusiness JSON-LD structured data
+**Output format:**
+- Return ONLY raw HTML starting with <!DOCTYPE html>
+- No markdown wrapping, no code fences, no explanation before or after
+- The entire website is one .html file
 
-CSS: Use :root custom properties for all colours, fonts, spacing, shadows, transitions, and radii.
+## Anti-Patterns to Avoid
 
-Include CSS reset: *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+These are specific things that make AI-generated websites look generic. NEVER do any of these:
 
-## Required Sections (7 minimum)
+**Layout anti-patterns:**
+- Perfectly symmetrical layouts with no visual tension
+- Every section using the same padding, same width, same structure
+- Cards in a boring 3-column grid with identical spacing
+- Hero section that's just centred text on a flat gradient
+- Sections that are all white or all the same background colour
 
-1. NAVIGATION — Fixed/sticky, transparent at top → glass effect on scroll (backdrop-filter blur). Logo left, nav links, phone tel: link, "Get a Free Quote" CTA button. Mobile hamburger with animated toggle + fullscreen overlay.
+**Typography anti-patterns:**
+- Using only one font weight throughout
+- Headings that are all the same size
+- No text hierarchy (everything feels the same importance)
+- Missing letter-spacing on uppercase labels
+- Line heights that are too tight or too loose
+- Generic font choices: Arial, Helvetica, Inter, Roboto, Open Sans, Lato, system-ui
 
-2. HERO — Full viewport (min-height: 100vh). Layered CSS gradient background + SVG pattern overlay at low opacity. Small uppercase label, large display heading (clamp sizing), supporting paragraph, two CTAs, prominent phone number, animated scroll indicator.
+**Colour anti-patterns:**
+- Purple-on-white gradients (the ultimate AI cliché)
+- Using the primary colour for everything with no variation
+- Flat solid backgrounds with no texture or depth
+- Accent colour used so sparingly it doesn't register
+- Grey text on white that's too low contrast to read
 
-3. SERVICES — Section label + decorative accent. Grid of service cards with unique inline SVG icons per service, hover effects (lift + shadow), staggered reveal animations.
+**Motion anti-patterns:**
+- No animations at all (static, lifeless pages)
+- Everything animating at once on page load
+- Only opacity transitions with no transform component
+- Missing hover states on interactive elements
+- No scroll-triggered animations
 
-4. ABOUT — Asymmetric editorial layout (text + visual element). Business story, trust badges ("Licensed & Insured", "Free Quotes", "Local to [Region]"), optional stats row with animated counters.
+**Component anti-patterns:**
+- Cards with no hover effect
+- Buttons that look like default browser buttons
+- Form inputs with no focus styling
+- Navigation that doesn't change on scroll
+- No mobile menu (or a broken one)
+- "Image placeholder" text instead of CSS-generated visuals
+- Sparse sections with one sentence of content
 
-5. TESTIMONIALS — Warm background. 3 cards with decorative quote marks, star ratings, customer name + location. Staggered reveal.
+## What GOOD Looks Like
 
-6. CONTACT FORM — Split layout: contact info with clickable tel:/mailto: links + styled form (Name, Phone, Email, Message, Submit). Focus states, "We'll get back to you within 24 hours."
+- Hero: full viewport, layered backgrounds (gradient + subtle pattern + radial glow), dramatic typography with tight leading, well-spaced CTAs
+- Cards: generous padding (32px+), subtle shadows that deepen on hover, icons that aren't generic, staggered reveal on scroll
+- About: editorial asymmetric layout (not centred), overlapping elements, stats with counter animations
+- Nav: glass-morphism on scroll, animated hamburger, smooth transitions
+- Typography: distinctive display font for headings paired with a refined body font, clear hierarchy from h1 (4rem) down to body (1.1rem)
+- Colour: dominant + accent approach, sections with alternating warm/cool backgrounds, dark footer
+- Motion: staggered scroll reveals (each card delayed 100ms after the previous), hover transforms + shadow changes, counters that animate up`;
+}
 
-7. FOOTER — Dark background. Business info, quick links, contact info, social icons if provided. Copyright with current year. MUST include: <a href="https://cheaptradiewebsites.co.nz">Website by CheapTradieWebsites.co.nz</a>
+export function getRefinementPrompt(html: string): string {
+  return `You generated the website below. Now review it critically against the frontend-design skill guidelines and fix everything that looks generic, template-y, or "AI-generated."
 
-## Required JavaScript (end of body)
+<generated_website>
+${html}
+</generated_website>
 
-- IntersectionObserver for scroll-reveal animations
-- Nav scroll detection (transparent → scrolled class)
-- Mobile menu toggle (hamburger ↔ X, body overflow hidden)
-- Animated counters for stats (data-target attribute)
-- Form submission handler (preventDefault + thank you message)
-- Smooth scroll for anchor links
+## Self-Critique Checklist
 
-## Quality Standard
+Review and fix ALL of these:
 
-Every website must have: 900+ lines, 7+ sections, 10+ unique SVG icons, working mobile menu, glass nav, scroll animations, hover effects on all interactive elements, responsive at 375/768/1200px.`;
+1. **Typography** — Are the fonts distinctive and characterful, or generic? Is there a clear hierarchy from display headings down to body text? Is letter-spacing used on uppercase labels? Are line-heights correct (tight on headings ~1.1, generous on body ~1.7)?
+
+2. **Colour & Depth** — Is the palette bold with a dominant colour and sharp accent? Are backgrounds layered (gradient + pattern + glow) or just flat? Does the hero have depth? Do sections alternate background colours/tones?
+
+3. **Layout & Composition** — Is there any asymmetry or visual tension, or is everything perfectly centred and predictable? Does the about section use an editorial split layout? Are there any grid-breaking or overlapping elements?
+
+4. **Motion** — Do elements have scroll-reveal animations with staggered delays? Do cards lift and change shadow on hover? Do buttons have hover transforms? Does the nav change on scroll? Are there counter animations on stats?
+
+5. **SVG Icons** — Does every service have a UNIQUE, detailed inline SVG icon? Are the icons just generic circles/squares or actually representative of the service?
+
+6. **Backgrounds** — Does the hero have layers (gradient + SVG pattern overlay at 3-5% opacity + radial glow)? Is there a grain/noise texture anywhere? Do testimonials have a warm differentiated background?
+
+7. **Mobile** — Is there a working hamburger menu with animated toggle? Does the layout stack properly? Are touch targets large enough?
+
+8. **Content** — Is every section substantial (not sparse)? Are service descriptions real and specific (not one-liners)? Is the copy authentic and local?
+
+9. **Details** — Are there decorative elements (accent lines, geometric shapes, quote marks)? Focus states on form inputs? Active/current states on nav links?
+
+For each issue you find, fix it directly. Then output the COMPLETE improved HTML file.
+
+Rules:
+- Output ONLY the improved HTML. No commentary, no markdown, no explanation.
+- Start with <!DOCTYPE html>
+- Fix everything, don't just tweak one or two things
+- Make it look like a $5,000 agency website, not a template`;
 }
 
 export function getUserPrompt(
@@ -113,7 +174,8 @@ export function getUserPrompt(
   let extractedSection = "";
   if (extractedContent) {
     extractedSection = `
-EXTRACTED CONTENT FROM EXISTING WEBSITE:
+## EXTRACTED CONTENT FROM EXISTING WEBSITE
+
 This tradie has an existing website. Use their real content — their words, their services, their story. Preserve their authentic voice.
 
 ${extractedContent.rawText ? `ORIGINAL WEBSITE TEXT:
@@ -129,34 +191,28 @@ ${extractedContent.socialLinks.map((s) => `- ${s.platform}: ${s.url}`).join("\n"
 
   const serviceList = services.slice(0, 12).map((s) => `"${s}"`).join(", ");
 
-  // Build the design system section
   let designSystemSection = "";
   if (designTokens.cssDesignSystem) {
     designSystemSection = `
 ## REFERENCE WEBSITE — COMPLETE CSS DESIGN SYSTEM
 
-The user has provided a reference website they want their new website to look like. Below is the complete design system extracted from that reference website. You MUST use this as your primary design guide — copy the look, feel, spacing, typography, colours, shadows, animations, and overall aesthetic as closely as possible. This is not a suggestion — this is the design spec.
+The user provided a reference website they want their new website to look like. Below is the complete design system extracted from that reference. Use this as your primary design guide — replicate the look, feel, spacing, typography, colours, shadows, animations, and overall aesthetic.
 
 <reference_design_system>
 ${designTokens.cssDesignSystem}
 </reference_design_system>
 
-Use the above design system to:
-- Match the exact colour palette (map the reference colours to the tradie's brand where appropriate)
-- Use the same typography scale (heading sizes, body sizes, line heights, letter spacing, font weights)
-- Replicate the spacing rhythm (section padding, card padding, margins, gaps)
-- Copy the shadow and depth treatment (box-shadows, overlays, blur effects)
-- Reproduce the button and interactive styles (padding, radius, hover effects, transitions)
-- Match the background treatments (gradients, patterns, textures, overlays)
-- Follow the same layout patterns (grid structures, asymmetric layouts, responsive breakpoints)
-- Copy the animation approach (scroll reveals, hover transitions, timing functions)
-- Capture the overall aesthetic and mood
-
-The tradie's website should look like it was designed by the same designer who designed the reference website.
+Apply this design system:
+- Map the reference colour palette to the tradie's brand colours
+- Use the same typography scale, font weights, and spacing
+- Replicate the shadow and depth treatment
+- Copy the button styles, hover effects, and transition timings
+- Match the background treatments and section rhythm
+- Follow the same layout structures and responsive approach
+- The tradie's website should look like it was designed by the same designer
 `;
   }
 
-  // Build the core design tokens (used when no full CSS design system is available, or as supplement)
   const tokenSection = `
 ## DESIGN TOKENS
 
@@ -172,7 +228,7 @@ Typography:
 - Body font: ${designTokens.fonts.body} (import from Google Fonts)
 
 Style direction: ${designTokens.style}
-Layout patterns from reference: ${designTokens.layoutPatterns.join(", ")}
+Layout patterns: ${designTokens.layoutPatterns.join(", ")}
 `;
 
   return `Build a premium, production-grade website for this New Zealand trade business.
@@ -201,7 +257,7 @@ ${testimonials!.map((t: { text: string; name: string; location?: string }, i: nu
 - Every email uses mailto: links
 - Each service needs its own card with a unique inline SVG icon and real description
 - Footer MUST include: <a href="https://cheaptradiewebsites.co.nz">Website by CheapTradieWebsites.co.nz</a>
-${extractedContent ? "- PRESERVE the tradie's real content from their existing website — their about text, services, and testimonials must appear faithfully in the new design." : ""}
+${extractedContent ? "- PRESERVE the tradie's real content from their existing website — about text, services, testimonials must appear faithfully." : ""}
 
 ## OUTPUT
 
