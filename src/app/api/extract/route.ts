@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import type { BusinessInfo, ExtractedImage } from "@/lib/types";
+import { extractContentWithClaude } from "@/lib/claude";
+import type { ExtractedImage } from "@/lib/types";
 
 const schema = z.object({
   url: z.string().url("Please enter a valid website address"),
@@ -29,6 +30,9 @@ export async function POST(request: Request) {
           businessInfo: {},
           images: [],
           rawText: "",
+          services: [],
+          testimonials: [],
+          socialLinks: [],
           note: "We couldn't reach that website, but no worries — just fill in your details below.",
         },
         { status: 200 }
@@ -37,11 +41,26 @@ export async function POST(request: Request) {
       clearTimeout(timeout);
     }
 
-    const businessInfo = extractBusinessInfo(html);
-    const images = extractImages(html, url);
-    const rawText = extractRawText(html);
+    // Extract images from HTML (regex-based — fast and reliable)
+    const imageUrls = extractImages(html, url);
 
-    return NextResponse.json({ businessInfo, images, rawText });
+    // Use Claude to intelligently extract all business content
+    try {
+      const extracted = await extractContentWithClaude(html, url, imageUrls);
+      return NextResponse.json(extracted);
+    } catch {
+      // Fall back to basic regex extraction
+      const businessInfo = extractBusinessInfoFallback(html);
+      const rawText = extractRawText(html);
+      return NextResponse.json({
+        businessInfo,
+        images: imageUrls,
+        rawText,
+        services: [],
+        testimonials: [],
+        socialLinks: [],
+      });
+    }
   } catch (err) {
     if (err instanceof z.ZodError) {
       return NextResponse.json(
@@ -54,57 +73,6 @@ export async function POST(request: Request) {
       { status: 500 }
     );
   }
-}
-
-function extractBusinessInfo(html: string): Partial<BusinessInfo> {
-  const info: Partial<BusinessInfo> = {};
-
-  // Extract title as business name
-  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
-  if (titleMatch) {
-    let title = titleMatch[1].trim();
-    // Remove common suffixes
-    title = title.replace(/\s*[-|–]\s*(Home|Welcome|Official).*$/i, "").trim();
-    if (title.length > 2 && title.length < 80) {
-      info.businessName = title;
-    }
-  }
-
-  // Extract phone numbers (NZ format)
-  const phoneRegex = /(?:(?:\+?64|0)[- ]?(?:2[0-9]|[3-9])[- ]?\d{3}[- ]?\d{4}|\b0800[- ]?\d{3}[- ]?\d{3}\b)/g;
-  const phones = html.match(phoneRegex);
-  if (phones?.[0]) {
-    info.phone = phones[0].trim();
-  }
-
-  // Extract email
-  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-  const emails = html.match(emailRegex);
-  if (emails?.[0]) {
-    info.email = emails[0];
-  }
-
-  // Extract meta description as about text
-  const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
-  if (metaDescMatch) {
-    info.aboutText = metaDescMatch[1].trim();
-  }
-
-  // Try to extract NZ location references
-  const nzLocations = [
-    "Auckland", "Wellington", "Christchurch", "Hamilton", "Tauranga",
-    "Dunedin", "Napier", "Hastings", "Palmerston North", "Nelson",
-    "Rotorua", "New Plymouth", "Whangarei", "Invercargill", "Whanganui",
-    "Gisborne", "Blenheim", "Timaru", "Taupo", "Queenstown",
-  ];
-  for (const loc of nzLocations) {
-    if (html.includes(loc)) {
-      info.location = loc;
-      break;
-    }
-  }
-
-  return info;
 }
 
 function extractImages(html: string, baseUrl: string): ExtractedImage[] {
@@ -147,8 +115,33 @@ function extractImages(html: string, baseUrl: string): ExtractedImage[] {
   return images;
 }
 
+function extractBusinessInfoFallback(html: string): Record<string, string> {
+  const info: Record<string, string> = {};
+
+  const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+  if (titleMatch) {
+    let title = titleMatch[1].trim();
+    title = title.replace(/\s*[-|–]\s*(Home|Welcome|Official).*$/i, "").trim();
+    if (title.length > 2 && title.length < 80) {
+      info.businessName = title;
+    }
+  }
+
+  const phoneRegex = /(?:(?:\+?64|0)[- ]?(?:2[0-9]|[3-9])[- ]?\d{3}[- ]?\d{4}|\b0800[- ]?\d{3}[- ]?\d{3}\b)/g;
+  const phones = html.match(phoneRegex);
+  if (phones?.[0]) info.phone = phones[0].trim();
+
+  const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+  const emails = html.match(emailRegex);
+  if (emails?.[0]) info.email = emails[0];
+
+  const metaDescMatch = html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']+)["']/i);
+  if (metaDescMatch) info.aboutText = metaDescMatch[1].trim();
+
+  return info;
+}
+
 function extractRawText(html: string): string {
-  // Strip tags and get text content
   const text = html
     .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
     .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
@@ -160,6 +153,5 @@ function extractRawText(html: string): string {
     .replace(/\s+/g, " ")
     .trim();
 
-  // Return first 2000 chars
-  return text.slice(0, 2000);
+  return text.slice(0, 3000);
 }

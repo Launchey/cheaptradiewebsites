@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createGenerateStream } from "@/lib/claude";
 import { saveSite } from "@/lib/storage";
 import { generateSiteId } from "@/lib/utils";
-import type { BusinessInfo, ExtractedDesignTokens } from "@/lib/types";
+import type { BusinessInfo, ExtractedDesignTokens, ExtractedContent } from "@/lib/types";
 
 const businessInfoSchema = z.object({
   businessName: z.string().min(1, "Business name is required"),
@@ -31,15 +31,37 @@ const designTokensSchema = z.object({
   layoutPatterns: z.array(z.string()),
 });
 
+const extractedContentSchema = z.object({
+  businessInfo: z.record(z.string(), z.unknown()).optional(),
+  images: z.array(z.object({
+    src: z.string(),
+    alt: z.string(),
+    type: z.string(),
+    base64: z.string().optional(),
+  })).optional(),
+  rawText: z.string().optional(),
+  services: z.array(z.string()).optional(),
+  testimonials: z.array(z.object({
+    text: z.string(),
+    name: z.string(),
+    location: z.string().optional(),
+  })).optional(),
+  socialLinks: z.array(z.object({
+    platform: z.string(),
+    url: z.string(),
+  })).optional(),
+}).optional();
+
 const schema = z.object({
   businessInfo: businessInfoSchema,
   designTokens: designTokensSchema,
+  extractedContent: extractedContentSchema,
 });
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { businessInfo, designTokens } = schema.parse(body);
+    const { businessInfo, designTokens, extractedContent } = schema.parse(body);
 
     const siteId = generateSiteId();
 
@@ -50,7 +72,8 @@ export async function POST(request: Request) {
         try {
           const messageStream = createGenerateStream(
             businessInfo as BusinessInfo,
-            designTokens as ExtractedDesignTokens
+            designTokens as ExtractedDesignTokens,
+            extractedContent as ExtractedContent | undefined
           );
 
           let fullHtml = "";
@@ -63,6 +86,12 @@ export async function POST(request: Request) {
           });
 
           await messageStream.finalMessage();
+
+          // Clean up the HTML — strip any markdown code fences Claude might add
+          fullHtml = fullHtml.trim();
+          if (fullHtml.startsWith("```")) {
+            fullHtml = fullHtml.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
+          }
 
           // Store the generated site
           saveSite({

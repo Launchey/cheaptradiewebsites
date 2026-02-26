@@ -5,12 +5,13 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import LoadingSpinner from "@/components/ui/LoadingSpinner";
 import { TEMPLATE_PRESETS } from "@/lib/constants";
-import type { ExtractedDesignTokens, BusinessInfo } from "@/lib/types";
+import type { ExtractedDesignTokens, BusinessInfo, ExtractedContent } from "@/lib/types";
 
 interface Step1Props {
   onComplete: (
     designTokens: ExtractedDesignTokens,
-    prefill?: Partial<BusinessInfo>
+    prefill?: Partial<BusinessInfo>,
+    extractedContent?: ExtractedContent
   ) => void;
   initialUrl?: string;
 }
@@ -54,6 +55,7 @@ export default function Step1UrlInput({ onComplete, initialUrl = "" }: Step1Prop
 
       // If they also have an existing website, extract from it
       let prefill: Partial<BusinessInfo> | undefined;
+      let extractedContent: ExtractedContent | undefined;
       if (existingUrl) {
         let extUrl = existingUrl.trim();
         if (!/^https?:\/\//i.test(extUrl)) {
@@ -69,13 +71,22 @@ export default function Step1UrlInput({ onComplete, initialUrl = "" }: Step1Prop
           });
           const extracted = await extractRes.json();
           prefill = extracted.businessInfo;
+          // Store the full extracted content for generation
+          extractedContent = {
+            businessInfo: extracted.businessInfo || {},
+            images: extracted.images || [],
+            rawText: extracted.rawText || "",
+            services: extracted.services || [],
+            testimonials: extracted.testimonials || [],
+            socialLinks: extracted.socialLinks || [],
+          };
         } catch {
           // Extraction is optional — don't block the flow
         }
         setIsExtracting(false);
       }
 
-      onComplete(tokens, prefill);
+      onComplete(tokens, prefill, extractedContent);
     } catch {
       setError("Something went wrong. Please check the address and try again.");
     } finally {

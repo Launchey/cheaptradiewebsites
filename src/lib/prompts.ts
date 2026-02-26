@@ -1,4 +1,4 @@
-import type { BusinessInfo, ExtractedDesignTokens } from "./types";
+import type { BusinessInfo, ExtractedDesignTokens, ExtractedContent } from "./types";
 import { TRADE_TESTIMONIALS } from "./constants";
 
 export function getSystemPrompt(): string {
@@ -119,9 +119,37 @@ CONTENT TONE:
 
 export function getUserPrompt(
   businessInfo: BusinessInfo,
-  designTokens: ExtractedDesignTokens
+  designTokens: ExtractedDesignTokens,
+  extractedContent?: ExtractedContent
 ): string {
-  const testimonials = TRADE_TESTIMONIALS[businessInfo.tradeType] || TRADE_TESTIMONIALS.other;
+  // Use real testimonials from extraction, fall back to trade-specific defaults
+  const hasRealTestimonials = extractedContent?.testimonials && extractedContent.testimonials.length > 0;
+  const testimonials = hasRealTestimonials
+    ? extractedContent!.testimonials!
+    : TRADE_TESTIMONIALS[businessInfo.tradeType] || TRADE_TESTIMONIALS.other;
+
+  // Use real services from extraction if available and richer than form data
+  const services = (extractedContent?.services && extractedContent.services.length > businessInfo.services.length)
+    ? extractedContent.services
+    : businessInfo.services;
+
+  // Build extracted content section
+  let extractedSection = "";
+  if (extractedContent) {
+    extractedSection = `
+EXTRACTED CONTENT FROM EXISTING WEBSITE:
+The tradie already has a website. Below is content extracted from it. Use this real content in the new website — it's their actual business information, written in their own words. Preserve the tone and key details.
+
+${extractedContent.rawText ? `ORIGINAL WEBSITE TEXT (preserve key messaging and tone):
+${extractedContent.rawText}` : ""}
+
+${extractedContent.images.length > 0 ? `IMAGES FROM EXISTING SITE (use as references for image descriptions in alt text, but generate CSS-based visual placeholders):
+${extractedContent.images.map((img) => `- [${img.type}] ${img.alt || "untitled"}: ${img.src}`).join("\n")}` : ""}
+
+${extractedContent.socialLinks && extractedContent.socialLinks.length > 0 ? `SOCIAL MEDIA LINKS (include these in the footer):
+${extractedContent.socialLinks.map((s) => `- ${s.platform}: ${s.url}`).join("\n")}` : ""}
+`;
+  }
 
   return `Generate a premium, production-quality website for this New Zealand trade business:
 
@@ -131,11 +159,11 @@ BUSINESS DETAILS:
 - Location: ${businessInfo.location}, ${businessInfo.region}
 - Phone: ${businessInfo.phone}
 - Email: ${businessInfo.email}
-- Services: ${businessInfo.services.join(", ")}
+- Services: ${services.join(", ")}
 - About: ${businessInfo.aboutText}
 ${businessInfo.tagline ? `- Tagline: "${businessInfo.tagline}"` : `- Suggested tagline: Create a short, punchy tagline appropriate for a ${businessInfo.tradeType} in ${businessInfo.region}`}
 ${businessInfo.yearsExperience ? `- Years Experience: ${businessInfo.yearsExperience}` : ""}
-
+${extractedSection}
 COLOUR PALETTE (use as CSS custom properties):
 - --color-primary: ${designTokens.colors.primary}
 - --color-secondary: ${designTokens.colors.secondary}
@@ -160,8 +188,8 @@ ${designTokens.style === "rustic" ? "Natural textures, organic shapes, earthy co
 
 LAYOUT PATTERNS: ${designTokens.layoutPatterns.join(", ")}
 
-USE THESE TESTIMONIALS:
-${testimonials.map((t, i) => `${i + 1}. "${t.text}" — ${t.name}, ${t.location}`).join("\n")}
+USE THESE TESTIMONIALS${hasRealTestimonials ? " (from the tradie's actual website — use them verbatim)" : ""}:
+${testimonials!.map((t: { text: string; name: string; location?: string }, i: number) => `${i + 1}. "${t.text}" — ${t.name}${t.location ? `, ${t.location}` : ""}`).join("\n")}
 
 IMPORTANT:
 - The website must look like it was designed by a professional agency, not generated from a template
@@ -172,6 +200,7 @@ IMPORTANT:
 - The footer must include: "Website by CheapTradieWebsites.co.nz"
 - Make the phone number ${businessInfo.phone} prominent and clickable throughout
 - All images should be CSS-based (gradients, patterns, SVGs) — no external image URLs
+${extractedContent ? "- CRITICAL: Use the tradie's REAL content from their existing website. Their about text, services, and testimonials should be faithfully preserved in the new design." : ""}
 
 Return ONLY the complete HTML file. No markdown, no code fences, no explanation.`;
 }

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { analyzeDesignWithClaude } from "@/lib/claude";
 import type { ExtractedDesignTokens } from "@/lib/types";
 
 const schema = z.object({
@@ -34,8 +35,14 @@ export async function POST(request: Request) {
       clearTimeout(timeout);
     }
 
-    // Extract design tokens from HTML/CSS
-    const tokens = extractDesignTokens(html);
+    // Use Claude to intelligently extract design tokens
+    let tokens: ExtractedDesignTokens;
+    try {
+      tokens = await analyzeDesignWithClaude(html, url);
+    } catch {
+      // Fall back to basic regex extraction if Claude fails
+      tokens = extractDesignTokensFallback(html);
+    }
 
     return NextResponse.json(tokens);
   } catch (err) {
@@ -52,26 +59,25 @@ export async function POST(request: Request) {
   }
 }
 
-function extractDesignTokens(html: string): ExtractedDesignTokens {
-  // Extract colours from CSS
+/**
+ * Fallback regex-based extraction if Claude API is unavailable.
+ */
+function extractDesignTokensFallback(html: string): ExtractedDesignTokens {
   const colorRegex = /#[0-9A-Fa-f]{3,8}|rgba?\([^)]+\)|hsla?\([^)]+\)/g;
   const colors = html.match(colorRegex) || [];
 
-  // Count colour frequency to find dominant colours
   const colorFreq = new Map<string, number>();
   for (const c of colors) {
     const normalized = c.toLowerCase().trim();
     colorFreq.set(normalized, (colorFreq.get(normalized) || 0) + 1);
   }
 
-  // Sort by frequency and filter out common defaults
   const defaults = new Set(["#000", "#000000", "#fff", "#ffffff", "#333", "#333333", "#666", "#999", "#ccc", "#eee", "#f5f5f5", "rgba(0,0,0,0)", "rgba(0, 0, 0, 0)"]);
   const sorted = [...colorFreq.entries()]
     .filter(([c]) => !defaults.has(c))
     .sort((a, b) => b[1] - a[1])
     .map(([c]) => c);
 
-  // Extract font families
   const fontRegex = /font-family:\s*(['"]?)([\w\s,-]+)\1/gi;
   const fonts: string[] = [];
   let match;
@@ -81,20 +87,6 @@ function extractDesignTokens(html: string): ExtractedDesignTokens {
       fonts.push(font);
     }
   }
-
-  // Determine style based on colour analysis
-  const hasDarkBg = colors.some((c) => {
-    const hex = c.match(/#([0-9a-f]{6})/i);
-    if (hex) {
-      const r = parseInt(hex[1].slice(0, 2), 16);
-      const g = parseInt(hex[1].slice(2, 4), 16);
-      const b = parseInt(hex[1].slice(4, 6), 16);
-      return r < 60 && g < 60 && b < 60;
-    }
-    return false;
-  });
-
-  const style = hasDarkBg ? "dark" : sorted[0]?.includes("warm") ? "warm" : "minimal";
 
   return {
     colors: {
@@ -108,7 +100,7 @@ function extractDesignTokens(html: string): ExtractedDesignTokens {
       heading: fonts[0] || "Montserrat",
       body: fonts[1] || fonts[0] || "Open Sans",
     },
-    style: style as ExtractedDesignTokens["style"],
+    style: "minimal",
     layoutPatterns: ["hero-full", "services-grid", "testimonial-cards"],
   };
 }

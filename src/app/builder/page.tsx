@@ -9,10 +9,10 @@ import Step3Preview from "@/components/builder/Step3Preview";
 import Step4Checkout from "@/components/builder/Step4Checkout";
 import SuccessScreen from "@/components/builder/SuccessScreen";
 import { TEMPLATE_PRESETS } from "@/lib/constants";
-import type { BuilderState, BusinessInfo, ExtractedDesignTokens } from "@/lib/types";
+import type { BuilderState, BusinessInfo, ExtractedDesignTokens, ExtractedContent } from "@/lib/types";
 
 type Action =
-  | { type: "SET_DESIGN_TOKENS"; tokens: ExtractedDesignTokens; prefill?: Partial<BusinessInfo> }
+  | { type: "SET_DESIGN_TOKENS"; tokens: ExtractedDesignTokens; prefill?: Partial<BusinessInfo>; extractedContent?: ExtractedContent }
   | { type: "SET_BUSINESS_INFO"; info: BusinessInfo }
   | { type: "SET_GENERATING" }
   | { type: "SET_PREVIEW"; siteId: string; previewUrl: string }
@@ -45,6 +45,7 @@ function reducer(state: BuilderState, action: Action): BuilderState {
         ...state,
         step: 2,
         designTokens: action.tokens,
+        extractedContent: action.extractedContent,
         businessInfo: action.prefill
           ? { ...state.businessInfo, ...action.prefill }
           : state.businessInfo,
@@ -114,8 +115,8 @@ function BuilderContent() {
   }, [searchParams]);
 
   const handleStep1Complete = useCallback(
-    (tokens: ExtractedDesignTokens, prefill?: Partial<BusinessInfo>) => {
-      dispatch({ type: "SET_DESIGN_TOKENS", tokens, prefill });
+    (tokens: ExtractedDesignTokens, prefill?: Partial<BusinessInfo>, extractedContent?: ExtractedContent) => {
+      dispatch({ type: "SET_DESIGN_TOKENS", tokens, prefill, extractedContent });
     },
     []
   );
@@ -131,6 +132,7 @@ function BuilderContent() {
           body: JSON.stringify({
             businessInfo: info,
             designTokens: state.designTokens,
+            extractedContent: state.extractedContent,
           }),
         });
 
@@ -182,7 +184,7 @@ function BuilderContent() {
         });
       }
     },
-    [state.designTokens]
+    [state.designTokens, state.extractedContent]
   );
 
   const handleRequestChanges = useCallback(
@@ -201,6 +203,7 @@ function BuilderContent() {
           body: JSON.stringify({
             businessInfo: updatedInfo,
             designTokens: state.designTokens,
+            extractedContent: state.extractedContent,
           }),
         });
 
@@ -251,7 +254,7 @@ function BuilderContent() {
         });
       }
     },
-    [state.businessInfo, state.designTokens]
+    [state.businessInfo, state.designTokens, state.extractedContent]
   );
 
   const handlePay = useCallback(async () => {

@@ -4,6 +4,7 @@ export interface BuilderState {
   existingWebsiteUrl?: string;
   businessInfo: BusinessInfo;
   designTokens?: ExtractedDesignTokens;
+  extractedContent?: ExtractedContent;
   extractedImages?: ExtractedImage[];
   generatedHtml?: string;
   siteId?: string;
@@ -61,6 +62,15 @@ export interface ExtractedImage {
   alt: string;
   type: "logo" | "hero" | "gallery" | "team" | "other";
   base64?: string;
+}
+
+export interface ExtractedContent {
+  businessInfo: Partial<BusinessInfo>;
+  images: ExtractedImage[];
+  rawText: string;
+  services?: string[];
+  testimonials?: { text: string; name: string; location?: string }[];
+  socialLinks?: { platform: string; url: string }[];
 }
 
 export interface GeneratedSite {
