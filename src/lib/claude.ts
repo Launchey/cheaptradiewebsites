@@ -1,18 +1,19 @@
 import Anthropic from "@anthropic-ai/sdk";
 import type { BusinessInfo, ExtractedDesignTokens, ExtractedContent, ExtractedImage } from "./types";
-import { getSystemPrompt, getUserPrompt, getRefinementPrompt } from "./prompts";
+import { getUserPrompt, getRefinementPrompt } from "./prompts";
 
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY,
 });
 
-// Use Opus for creative generation work — Sonnet for extraction/analysis
 const GENERATION_MODEL = "claude-sonnet-4-20250514";
 const ANALYSIS_MODEL = "claude-sonnet-4-20250514";
 
+const SKILL_ID = process.env.FRONTEND_DESIGN_SKILL_ID || "";
+const SKILLS_BETAS = ["code-execution-2025-08-25", "skills-2025-10-02"];
+
 /**
- * Extract the COMPLETE CSS design system from a reference website.
- * Two parallel calls: structured tokens + full prose design specification.
+ * Extract the complete CSS design system from a reference website.
  */
 export async function analyzeDesignWithClaude(html: string, url: string): Promise<ExtractedDesignTokens> {
   const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
@@ -62,7 +63,7 @@ Return ONLY this JSON (no markdown, no explanation):
   "layoutPatterns": ["observed layout patterns"]
 }`;
 
-  const designSystemPrompt = `You are reverse-engineering a website's complete design system from its CSS and HTML. Produce a specification that another designer could use to recreate this exact look and feel.
+  const designSystemPrompt = `You are reverse-engineering a website's complete design system. Produce a specification another designer could use to recreate this exact look and feel.
 
 URL: ${url}
 
@@ -79,34 +80,20 @@ ${bodySnippet.slice(0, 12000)}
 </html_structure>
 
 Write a complete CSS DESIGN SYSTEM SPECIFICATION covering:
+1. COLOUR PALETTE — Every colour with exact values
+2. TYPOGRAPHY — Font families, weights, sizes, line heights, letter spacing
+3. SPACING & LAYOUT — Section padding, container width, grid, margins
+4. BORDERS & RADII — Exact border-radius, border styles
+5. SHADOWS & DEPTH — Exact box-shadow values, blur effects
+6. BUTTONS & INTERACTIVE — Styles, hover effects, transitions
+7. BACKGROUNDS & TEXTURES — Gradients, patterns, overlays
+8. NAVIGATION — Height, background, styles
+9. CARDS & COMPONENTS — Padding, radius, shadow, hover states
+10. ANIMATIONS & MOTION — Scroll reveals, transitions, timing
+11. RESPONSIVE — Breakpoints, mobile changes
+12. OVERALL AESTHETIC — Mood, personality, what makes it distinctive
 
-1. COLOUR PALETTE — Every colour: primary, secondary, accent, backgrounds (hero, sections, cards, footer), text colours, borders, shadows, gradients (exact values), overlays.
-
-2. TYPOGRAPHY — Font families (exact names), weights, heading sizes (h1-h6 with exact values), body size, line heights, letter spacing, text transforms.
-
-3. SPACING & LAYOUT — Section padding, container max-width, grid columns/gaps, card padding, margins, spacing rhythm.
-
-4. BORDERS & RADII — Border radius on cards/buttons/inputs/images. Border styles/widths/colours. Dividers.
-
-5. SHADOWS & DEPTH — Box shadows (exact values), text shadows, glass/blur effects, overlay opacities.
-
-6. BUTTONS & INTERACTIVE — Button styles (padding, radius, colours, weight), hover effects, transitions, focus states, link styles.
-
-7. BACKGROUNDS & TEXTURES — Hero treatment (gradient direction, colours, overlays), section backgrounds, decorative elements, patterns, grain.
-
-8. NAVIGATION — Height, background, logo style, link spacing, mobile approach, CTA button.
-
-9. CARDS & COMPONENTS — Card padding/radius/shadow/border, hover states, icon sizing, form input styles.
-
-10. ANIMATIONS & MOTION — Load animations, scroll reveals, hover transitions, timing functions, stagger patterns.
-
-11. RESPONSIVE — Breakpoints, mobile changes, font scaling, grid collapse.
-
-12. OVERALL AESTHETIC — Mood, personality, what makes it distinctive.
-
-Be SPECIFIC with values — say "padding: 100px 0" not "large padding". Say "box-shadow: 0 8px 30px rgba(0,0,0,0.12)" not "subtle shadow". Exact CSS values.
-
-Return as plain text (not JSON, not code blocks).`;
+Be SPECIFIC with CSS values. Return as plain text.`;
 
   try {
     const [tokensResponse, designSystemResponse] = await Promise.all([
@@ -161,7 +148,7 @@ Return as plain text (not JSON, not code blocks).`;
 }
 
 /**
- * Extract business content from a tradie's existing website using Claude.
+ * Extract business content from a tradie's existing website.
  */
 export async function extractContentWithClaude(
   html: string,
@@ -251,110 +238,112 @@ Rules: Extract REAL data only. NZ English. Use null for unknown fields.`;
 }
 
 /**
- * Generate a website with multi-turn refinement.
- * Turn 1: Generate initial HTML
- * Turn 2: Self-critique and improve against the design skill guidelines
- */
-export async function generateWebsite(
-  businessInfo: BusinessInfo,
-  designTokens: ExtractedDesignTokens,
-  extractedContent?: ExtractedContent
-): Promise<string> {
-  // Turn 1: Initial generation
-  const initialMessage = await anthropic.messages.create({
-    model: GENERATION_MODEL,
-    max_tokens: 64000,
-    system: getSystemPrompt(),
-    messages: [
-      {
-        role: "user",
-        content: getUserPrompt(businessInfo, designTokens, extractedContent),
-      },
-    ],
-  });
-
-  const initialBlock = initialMessage.content.find((block) => block.type === "text");
-  if (!initialBlock || initialBlock.type !== "text") {
-    throw new Error("No text response from generation");
-  }
-
-  let html = initialBlock.text.trim();
-  if (html.startsWith("```")) {
-    html = html.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
-  }
-
-  // Turn 2: Self-critique and refinement
-  const refinedMessage = await anthropic.messages.create({
-    model: GENERATION_MODEL,
-    max_tokens: 64000,
-    system: getSystemPrompt(),
-    messages: [
-      {
-        role: "user",
-        content: getUserPrompt(businessInfo, designTokens, extractedContent),
-      },
-      {
-        role: "assistant",
-        content: html,
-      },
-      {
-        role: "user",
-        content: getRefinementPrompt(html),
-      },
-    ],
-  });
-
-  const refinedBlock = refinedMessage.content.find((block) => block.type === "text");
-  if (refinedBlock && refinedBlock.type === "text") {
-    let refined = refinedBlock.text.trim();
-    if (refined.startsWith("```")) {
-      refined = refined.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
-    }
-    if (refined.startsWith("<!DOCTYPE") || refined.startsWith("<html")) {
-      return refined;
-    }
-  }
-
-  return html;
-}
-
-/**
- * Streaming generation with multi-turn refinement.
- * Streams Turn 1 for progress feedback, then does Turn 2 refinement non-streamed.
- * Returns a custom event emitter that sends chunks + a refinement phase.
+ * Generate website using the Agent Skills API.
+ * The frontend-design skill is loaded via the container parameter,
+ * giving Claude access to the skill's design philosophy and guidelines.
+ * Uses multi-turn: generate → self-critique → refine.
  */
 export function createGenerateStream(
   businessInfo: BusinessInfo,
   designTokens: ExtractedDesignTokens,
   extractedContent?: ExtractedContent
 ) {
-  // For the streaming API route, we return an object that the route can use
-  // to drive a two-phase generation
   return {
     async run(onChunk: (text: string) => void, onStatus: (status: string) => void): Promise<string> {
-      // Phase 1: Stream initial generation
-      onStatus("Designing your website...");
+      const userPrompt = getUserPrompt(businessInfo, designTokens, extractedContent);
 
-      const stream = anthropic.messages.stream({
-        model: GENERATION_MODEL,
-        max_tokens: 64000,
-        system: getSystemPrompt(),
-        messages: [
-          {
-            role: "user",
-            content: getUserPrompt(businessInfo, designTokens, extractedContent),
-          },
-        ],
-      });
+      // Check if we have a skill ID — if so, use Agent Skills API
+      const useSkillsApi = !!SKILL_ID;
+
+      // Phase 1: Initial generation
+      onStatus("Designing your website...");
 
       let initialHtml = "";
 
-      stream.on("text", (text) => {
-        initialHtml += text;
-        onChunk(text);
-      });
+      if (useSkillsApi) {
+        // Use Agent Skills API with the frontend-design skill
+        const response = await anthropic.beta.messages.create({
+          model: GENERATION_MODEL,
+          max_tokens: 64000,
+          betas: SKILLS_BETAS,
+          container: {
+            skills: [
+              {
+                type: "custom" as const,
+                skill_id: SKILL_ID,
+                version: "latest",
+              },
+            ],
+          },
+          messages: [
+            { role: "user", content: userPrompt },
+          ],
+          tools: [
+            { type: "code_execution_20250825" as const, name: "code_execution" },
+          ],
+        });
 
-      await stream.finalMessage();
+        // Handle pause_turn for long operations
+        let currentResponse = response;
+        let messages: Anthropic.Beta.Messages.BetaMessageParam[] = [
+          { role: "user", content: userPrompt },
+        ];
+
+        for (let i = 0; i < 5; i++) {
+          if (currentResponse.stop_reason !== "pause_turn") break;
+
+          messages = [
+            ...messages,
+            { role: "assistant" as const, content: currentResponse.content },
+          ];
+
+          currentResponse = await anthropic.beta.messages.create({
+            model: GENERATION_MODEL,
+            max_tokens: 64000,
+            betas: SKILLS_BETAS,
+            container: {
+              id: currentResponse.container?.id,
+              skills: [
+                {
+                  type: "custom" as const,
+                  skill_id: SKILL_ID,
+                  version: "latest",
+                },
+              ],
+            },
+            messages,
+            tools: [
+              { type: "code_execution_20250825" as const, name: "code_execution" },
+            ],
+          });
+        }
+
+        // Extract the HTML from the response content
+        for (const block of currentResponse.content) {
+          if (block.type === "text") {
+            initialHtml += block.text;
+          }
+        }
+
+        // Send the full response as chunks for client progress
+        onChunk(initialHtml);
+      } else {
+        // Fallback: stream without skills API
+        const stream = anthropic.messages.stream({
+          model: GENERATION_MODEL,
+          max_tokens: 64000,
+          messages: [
+            { role: "user", content: userPrompt },
+          ],
+        });
+
+        stream.on("text", (text) => {
+          initialHtml += text;
+          onChunk(text);
+        });
+
+        await stream.finalMessage();
+      }
 
       // Clean up
       initialHtml = initialHtml.trim();
@@ -362,46 +351,122 @@ export function createGenerateStream(
         initialHtml = initialHtml.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
       }
 
-      // Phase 2: Refinement pass (non-streamed, but notify user)
+      // Phase 2: Refinement pass
       onStatus("Polishing and refining the design...");
 
       try {
-        const refinedMessage = await anthropic.messages.create({
-          model: GENERATION_MODEL,
-          max_tokens: 64000,
-          system: getSystemPrompt(),
-          messages: [
-            {
-              role: "user",
-              content: getUserPrompt(businessInfo, designTokens, extractedContent),
-            },
-            {
-              role: "assistant",
-              content: initialHtml,
-            },
-            {
-              role: "user",
-              content: getRefinementPrompt(initialHtml),
-            },
-          ],
-        });
+        let refinedHtml = "";
 
-        const refinedBlock = refinedMessage.content.find((b) => b.type === "text");
-        if (refinedBlock && refinedBlock.type === "text") {
-          let refined = refinedBlock.text.trim();
-          if (refined.startsWith("```")) {
-            refined = refined.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
+        if (useSkillsApi) {
+          const refinedResponse = await anthropic.beta.messages.create({
+            model: GENERATION_MODEL,
+            max_tokens: 64000,
+            betas: SKILLS_BETAS,
+            container: {
+              skills: [
+                {
+                  type: "custom" as const,
+                  skill_id: SKILL_ID,
+                  version: "latest",
+                },
+              ],
+            },
+            messages: [
+              { role: "user", content: userPrompt },
+              { role: "assistant", content: initialHtml },
+              { role: "user", content: getRefinementPrompt(initialHtml) },
+            ],
+            tools: [
+              { type: "code_execution_20250825" as const, name: "code_execution" },
+            ],
+          });
+
+          // Handle pause_turn
+          let currentResponse = refinedResponse;
+          let messages: Anthropic.Beta.Messages.BetaMessageParam[] = [
+            { role: "user", content: userPrompt },
+            { role: "assistant", content: initialHtml },
+            { role: "user", content: getRefinementPrompt(initialHtml) },
+          ];
+
+          for (let i = 0; i < 5; i++) {
+            if (currentResponse.stop_reason !== "pause_turn") break;
+
+            messages = [
+              ...messages,
+              { role: "assistant" as const, content: currentResponse.content },
+            ];
+
+            currentResponse = await anthropic.beta.messages.create({
+              model: GENERATION_MODEL,
+              max_tokens: 64000,
+              betas: SKILLS_BETAS,
+              container: {
+                id: currentResponse.container?.id,
+                skills: [
+                  {
+                    type: "custom" as const,
+                    skill_id: SKILL_ID,
+                    version: "latest",
+                  },
+                ],
+              },
+              messages,
+              tools: [
+                { type: "code_execution_20250825" as const, name: "code_execution" },
+              ],
+            });
           }
-          if (refined.startsWith("<!DOCTYPE") || refined.startsWith("<html")) {
-            return refined;
+
+          for (const block of currentResponse.content) {
+            if (block.type === "text") {
+              refinedHtml += block.text;
+            }
           }
+        } else {
+          // Fallback: standard API refinement
+          const refinedMessage = await anthropic.messages.create({
+            model: GENERATION_MODEL,
+            max_tokens: 64000,
+            messages: [
+              { role: "user", content: userPrompt },
+              { role: "assistant", content: initialHtml },
+              { role: "user", content: getRefinementPrompt(initialHtml) },
+            ],
+          });
+
+          for (const block of refinedMessage.content) {
+            if (block.type === "text") {
+              refinedHtml += block.text;
+            }
+          }
+        }
+
+        refinedHtml = refinedHtml.trim();
+        if (refinedHtml.startsWith("```")) {
+          refinedHtml = refinedHtml.replace(/^```(?:html)?\n?/, "").replace(/\n?```$/, "");
+        }
+
+        if (refinedHtml.startsWith("<!DOCTYPE") || refinedHtml.startsWith("<html")) {
+          return refinedHtml;
         }
       } catch (err) {
         console.error("Refinement failed, using initial generation:", err);
       }
 
-      // Fallback to initial if refinement fails
       return initialHtml;
     },
   };
+}
+
+/**
+ * Non-streaming generation (kept for backwards compatibility).
+ */
+export async function generateWebsite(
+  businessInfo: BusinessInfo,
+  designTokens: ExtractedDesignTokens,
+  extractedContent?: ExtractedContent
+): Promise<string> {
+  const generator = createGenerateStream(businessInfo, designTokens, extractedContent);
+  return generator.run(() => {}, () => {});
 }
