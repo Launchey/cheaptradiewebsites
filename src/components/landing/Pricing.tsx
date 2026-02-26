@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import Button from "@/components/ui/Button";
 
 const included = [
-  "Custom AI-designed website",
+  "Custom designed website",
   "Mobile-friendly responsive design",
   "Your business name, services & contact info",
   "Hosted on a fast, secure server",

@@ -65,7 +65,7 @@ export default function Footer() {
             Zealand.
           </p>
           <p className="text-[var(--text-on-dark-muted)] text-xs">
-            Websites built with AI, designed for tradies.
+            Professional websites, built for tradies.
           </p>
         </div>
       </div>

@@ -6,7 +6,7 @@ const faqs = [
   {
     question: "How long does it take to get my website?",
     answer:
-      "Your website is built in minutes, not weeks. Once you\u2019ve picked a style and answered a few questions, our AI gets to work immediately. You\u2019ll have a live preview to look at within about 5 minutes.",
+      "Your website is built in minutes, not weeks. Once you\u2019ve picked a style and answered a few questions, we get to work immediately. You\u2019ll have a live preview to look at within about 5 minutes.",
   },
   {
     question: "Do I need any tech skills?",
@@ -26,7 +26,7 @@ const faqs = [
   {
     question: "What\u2019s included in the $500?",
     answer:
-      "Everything you need: a custom AI-designed website, mobile-friendly design, your business info and services, fast and secure hosting, a free web address (yourname.vercel.app), and one round of revisions. No monthly fees, no hidden costs.",
+      "Everything you need: a custom designed website, mobile-friendly design, your business info and services, fast and secure hosting, a free web address (yourname.vercel.app), and one round of revisions. No monthly fees, no hidden costs.",
   },
   {
     question: "Do I need to pay anything monthly?",
