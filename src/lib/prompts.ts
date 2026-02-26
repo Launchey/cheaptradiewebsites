@@ -129,31 +129,81 @@ ${extractedContent.socialLinks.map((s) => `- ${s.platform}: ${s.url}`).join("\n"
 
   const serviceList = services.slice(0, 12).map((s) => `"${s}"`).join(", ");
 
-  return `Build a premium, distinctive website for this New Zealand trade business:
+  // Build the design system section
+  let designSystemSection = "";
+  if (designTokens.cssDesignSystem) {
+    designSystemSection = `
+## REFERENCE WEBSITE — COMPLETE CSS DESIGN SYSTEM
 
-BUSINESS:
-- Name: ${businessInfo.businessName}
-- Trade: ${businessInfo.tradeType}
+The user has provided a reference website they want their new website to look like. Below is the complete design system extracted from that reference website. You MUST use this as your primary design guide — copy the look, feel, spacing, typography, colours, shadows, animations, and overall aesthetic as closely as possible. This is not a suggestion — this is the design spec.
+
+<reference_design_system>
+${designTokens.cssDesignSystem}
+</reference_design_system>
+
+Use the above design system to:
+- Match the exact colour palette (map the reference colours to the tradie's brand where appropriate)
+- Use the same typography scale (heading sizes, body sizes, line heights, letter spacing, font weights)
+- Replicate the spacing rhythm (section padding, card padding, margins, gaps)
+- Copy the shadow and depth treatment (box-shadows, overlays, blur effects)
+- Reproduce the button and interactive styles (padding, radius, hover effects, transitions)
+- Match the background treatments (gradients, patterns, textures, overlays)
+- Follow the same layout patterns (grid structures, asymmetric layouts, responsive breakpoints)
+- Copy the animation approach (scroll reveals, hover transitions, timing functions)
+- Capture the overall aesthetic and mood
+
+The tradie's website should look like it was designed by the same designer who designed the reference website.
+`;
+  }
+
+  // Build the core design tokens (used when no full CSS design system is available, or as supplement)
+  const tokenSection = `
+## DESIGN TOKENS
+
+Colour palette:
+- Primary: ${designTokens.colors.primary}
+- Secondary: ${designTokens.colors.secondary}
+- Accent/CTA: ${designTokens.colors.accent}
+- Background: ${designTokens.colors.background}
+- Text: ${designTokens.colors.text}
+
+Typography:
+- Heading font: ${designTokens.fonts.heading} (import from Google Fonts)
+- Body font: ${designTokens.fonts.body} (import from Google Fonts)
+
+Style direction: ${designTokens.style}
+Layout patterns from reference: ${designTokens.layoutPatterns.join(", ")}
+`;
+
+  return `Build a premium, production-grade website for this New Zealand trade business.
+
+## BUSINESS DETAILS
+
+- Business Name: ${businessInfo.businessName}
+- Trade Type: ${businessInfo.tradeType}
 - Location: ${businessInfo.location}, ${businessInfo.region}
 - Phone: ${businessInfo.phone}
 - Email: ${businessInfo.email}
 - Services: ${serviceList}${services.length > 12 ? ` (plus ${services.length - 12} more)` : ""}
 - About: ${businessInfo.aboutText}
-${businessInfo.tagline ? `- Tagline: "${businessInfo.tagline}"` : `- Create a tagline: punchy, memorable, authentic for a ${businessInfo.tradeType} in ${businessInfo.region}`}
-${businessInfo.yearsExperience ? `- Experience: ${businessInfo.yearsExperience} years` : ""}
-${extractedSection}
-DESIGN TOKENS:
-- Colours: primary ${designTokens.colors.primary}, secondary ${designTokens.colors.secondary}, accent ${designTokens.colors.accent}, background ${designTokens.colors.background}, text ${designTokens.colors.text}
-- Heading font: ${designTokens.fonts.heading}
-- Body font: ${designTokens.fonts.body}
-- Style: ${designTokens.style}
-- Layout patterns: ${designTokens.layoutPatterns.join(", ")}
+${businessInfo.tagline ? `- Tagline: "${businessInfo.tagline}"` : `- Create a memorable tagline for a ${businessInfo.tradeType} in ${businessInfo.region}`}
+${businessInfo.yearsExperience ? `- Years of Experience: ${businessInfo.yearsExperience}` : ""}
+${extractedSection}${designSystemSection}${tokenSection}
+## TESTIMONIALS${hasRealTestimonials ? " (real quotes from their existing website — use verbatim)" : ""}
 
-TESTIMONIALS${hasRealTestimonials ? " (real, from their website)" : ""}:
 ${testimonials!.map((t: { text: string; name: string; location?: string }, i: number) => `${i + 1}. "${t.text}" — ${t.name}${t.location ? `, ${t.location}` : ""}`).join("\n")}
 
-Write compelling, authentic copy as if you are this tradie. Reference ${businessInfo.location} and ${businessInfo.region} naturally. Make the phone number ${businessInfo.phone} prominent and clickable everywhere.
-${extractedContent ? "\nPRESERVE their real content from the extracted website — about text, services, testimonials must appear faithfully." : ""}
+## CONTENT REQUIREMENTS
 
-Return ONLY the complete HTML. Start with <!DOCTYPE html>.`;
+- Write as if you ARE this tradie — confident, authentic, local NZ voice
+- Reference ${businessInfo.location} and ${businessInfo.region} naturally throughout
+- Make the phone number ${businessInfo.phone} prominent and clickable (tel: links) everywhere
+- Every email uses mailto: links
+- Each service needs its own card with a unique inline SVG icon and real description
+- Footer MUST include: <a href="https://cheaptradiewebsites.co.nz">Website by CheapTradieWebsites.co.nz</a>
+${extractedContent ? "- PRESERVE the tradie's real content from their existing website — their about text, services, and testimonials must appear faithfully in the new design." : ""}
+
+## OUTPUT
+
+Return ONLY the complete HTML file. Start with <!DOCTYPE html>. No markdown. No code fences. No explanation.`;
 }

@@ -7,88 +7,138 @@ const anthropic = new Anthropic({
 });
 
 /**
- * Use Claude to intelligently extract design tokens from a website's HTML.
- * Much more accurate than regex parsing — understands context, visual hierarchy, and brand identity.
+ * Use Claude to extract the COMPLETE CSS design system from a reference website.
+ * Returns structured tokens AND a full prose description of the design system
+ * that can be handed to the generation prompt to faithfully reproduce the look.
  */
 export async function analyzeDesignWithClaude(html: string, url: string): Promise<ExtractedDesignTokens> {
-  // Trim HTML to avoid token limits — focus on <head> and first chunk of <body>
+  // Extract <head> for font links, meta etc.
   const headMatch = html.match(/<head[^>]*>([\s\S]*?)<\/head>/i);
   const headContent = headMatch ? headMatch[1] : "";
 
-  // Extract all <style> blocks
+  // Extract ALL <style> blocks — this is the core design data
   const styleBlocks: string[] = [];
   const styleRegex = /<style[^>]*>([\s\S]*?)<\/style>/gi;
   let match;
   while ((match = styleRegex.exec(html)) !== null) {
     styleBlocks.push(match[1]);
   }
+  const allCss = styleBlocks.join("\n");
 
-  // Get inline styles from body (first 15000 chars to stay within limits)
+  // Extract inline styles from body for additional design cues
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*)/i);
-  const bodySnippet = bodyMatch ? bodyMatch[1].slice(0, 15000) : html.slice(0, 15000);
+  const bodySnippet = bodyMatch ? bodyMatch[1].slice(0, 20000) : html.slice(0, 20000);
 
-  const prompt = `Analyse this website's design and extract its design tokens as structured JSON.
+  // First call: extract structured tokens
+  const tokensPrompt = `Analyse this website and extract its design tokens as JSON.
 
 URL: ${url}
 
-<head_content>
+<head>
 ${headContent.slice(0, 5000)}
-</head_content>
+</head>
 
-<css_styles>
-${styleBlocks.join("\n").slice(0, 8000)}
-</css_styles>
+<css>
+${allCss.slice(0, 10000)}
+</css>
 
-<body_html_snippet>
-${bodySnippet}
-</body_html_snippet>
+<body_snippet>
+${bodySnippet.slice(0, 10000)}
+</body_snippet>
 
-Extract the following as JSON:
+Return ONLY this JSON (no markdown, no explanation):
 {
   "colors": {
-    "primary": "main brand colour (hex)",
-    "secondary": "secondary brand colour (hex)",
-    "accent": "accent/CTA colour (hex)",
-    "background": "main background colour (hex)",
-    "text": "main text colour (hex)"
+    "primary": "#hex (main brand colour)",
+    "secondary": "#hex (secondary brand colour)",
+    "accent": "#hex (accent/CTA colour)",
+    "background": "#hex (main background)",
+    "text": "#hex (main text colour)"
   },
   "fonts": {
-    "heading": "heading font family name (just the name, no fallbacks)",
-    "body": "body font family name (just the name, no fallbacks)"
+    "heading": "exact font family name for headings",
+    "body": "exact font family name for body text"
   },
-  "style": "one of: minimal | bold | warm | dark | corporate | rustic",
-  "layoutPatterns": ["array of layout patterns observed, e.g. hero-full, services-grid, testimonial-cards, split-about, contact-form"]
-}
+  "style": "minimal|bold|warm|dark|corporate|rustic",
+  "layoutPatterns": ["array of section layout patterns observed"]
+}`;
 
-Rules:
-- Return ONLY valid JSON, no markdown, no explanation
-- For colours, use hex format (#RRGGBB)
-- If you can't determine a colour, use sensible defaults that match the detected style
-- For fonts, extract the actual Google Fonts or web font names used. If none detected, choose fonts that match the style
-- The style should reflect the overall visual feel of the website
-- Layout patterns should describe the actual section layouts you can identify`;
+  // Second call: extract the FULL design system description
+  const designSystemPrompt = `You are a senior web designer reverse-engineering a website's complete design system. Study the CSS, HTML structure, and visual patterns to produce a comprehensive design specification that another designer could use to recreate this exact look and feel.
+
+URL: ${url}
+
+<head>
+${headContent.slice(0, 4000)}
+</head>
+
+<full_css>
+${allCss.slice(0, 15000)}
+</full_css>
+
+<html_structure>
+${bodySnippet.slice(0, 12000)}
+</html_structure>
+
+Write a complete CSS DESIGN SYSTEM SPECIFICATION. Cover every aspect:
+
+1. COLOUR PALETTE — Every colour used: primary, secondary, accent, backgrounds (hero, sections, cards, footer), text colours (headings, body, muted, links, hover states), borders, shadows, gradients (exact values), overlays.
+
+2. TYPOGRAPHY — Font families (exact names), font weights used, heading sizes (h1 through h6 with exact rem/px values), body text size, line heights, letter spacing, text transforms (uppercase labels etc.), font style choices (italic, bold patterns).
+
+3. SPACING & LAYOUT — Section padding (vertical and horizontal), container max-width, grid system (columns, gaps), card padding, element margins, the overall spacing rhythm (tight/generous/mixed).
+
+4. BORDERS & RADII — Border radius on cards, buttons, inputs, images. Border styles, widths, colours. Dividers/separators.
+
+5. SHADOWS & DEPTH — Box shadows (exact values), text shadows, layering/z-index patterns, glass/blur effects, overlay opacity values.
+
+6. BUTTONS & INTERACTIVE — Button styles (padding, radius, colours, font weight), hover effects (colour changes, transforms, shadows), transition timing/easing, focus states, link styles.
+
+7. BACKGROUNDS & TEXTURES — Hero treatment (gradient direction, colours, overlays), section backgrounds (alternating patterns), decorative elements, patterns, noise/grain, background images approach.
+
+8. NAVIGATION — Height, background treatment (transparent/solid/glass), logo style, link spacing and styling, mobile menu approach, CTA button in nav.
+
+9. CARDS & COMPONENTS — Card structure (padding, radius, shadow, border), hover states, icon sizing, badge/tag styles, list styles, form input styles.
+
+10. ANIMATIONS & MOTION — Page load animations, scroll-triggered reveals, hover transitions, timing functions, stagger patterns.
+
+11. RESPONSIVE APPROACH — Breakpoints, mobile layout changes, font size scaling, grid collapse patterns, mobile-specific treatments.
+
+12. OVERALL AESTHETIC — The mood, personality, and design philosophy. What makes this design distinctive vs generic.
+
+Be SPECIFIC with values. Don't say "large padding" — say "padding: 100px 0" or "clamp(60px, 10vw, 120px)". Don't say "dark shadow" — say "box-shadow: 0 8px 30px rgba(0,0,0,0.12)". Exact values that can be directly used in CSS.
+
+Return the specification as plain text (not JSON, not markdown code blocks).`;
 
   try {
-    const message = await anthropic.messages.create({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 1024,
-      messages: [{ role: "user", content: prompt }],
-    });
+    // Run both extractions in parallel
+    const [tokensResponse, designSystemResponse] = await Promise.all([
+      anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1024,
+        messages: [{ role: "user", content: tokensPrompt }],
+      }),
+      anthropic.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 4096,
+        messages: [{ role: "user", content: designSystemPrompt }],
+      }),
+    ]);
 
-    const textBlock = message.content.find((block) => block.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
-      throw new Error("No response from analysis");
-    }
+    // Parse tokens
+    const tokensText = tokensResponse.content.find((b) => b.type === "text");
+    if (!tokensText || tokensText.type !== "text") throw new Error("No tokens response");
 
-    // Parse JSON from response — handle potential markdown wrapping
-    let jsonStr = textBlock.text.trim();
+    let jsonStr = tokensText.text.trim();
     if (jsonStr.startsWith("```")) {
       jsonStr = jsonStr.replace(/^```(?:json)?\n?/, "").replace(/\n?```$/, "");
     }
-
     const parsed = JSON.parse(jsonStr);
 
-    // Validate and ensure correct structure
+    // Get design system description
+    const designText = designSystemResponse.content.find((b) => b.type === "text");
+    const cssDesignSystem = designText && designText.type === "text" ? designText.text.trim() : "";
+
     return {
       colors: {
         primary: parsed.colors?.primary || "#2C3E50",
@@ -107,6 +157,7 @@ Rules:
       layoutPatterns: Array.isArray(parsed.layoutPatterns)
         ? parsed.layoutPatterns
         : ["hero-full", "services-grid", "testimonial-cards"],
+      cssDesignSystem,
     };
   } catch (err) {
     console.error("Claude design analysis failed, falling back to defaults:", err);

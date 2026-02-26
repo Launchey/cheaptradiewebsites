@@ -55,6 +55,8 @@ export interface ExtractedDesignTokens {
   fonts: { heading: string; body: string };
   style: "minimal" | "bold" | "warm" | "dark" | "corporate" | "rustic";
   layoutPatterns: string[];
+  /** Full CSS design system extracted from the reference website */
+  cssDesignSystem?: string;
 }
 
 export interface ExtractedImage {

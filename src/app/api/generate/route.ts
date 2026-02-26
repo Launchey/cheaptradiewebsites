@@ -29,6 +29,7 @@ const designTokensSchema = z.object({
   fonts: z.object({ heading: z.string(), body: z.string() }),
   style: z.enum(["minimal", "bold", "warm", "dark", "corporate", "rustic"]),
   layoutPatterns: z.array(z.string()),
+  cssDesignSystem: z.string().optional(),
 });
 
 const extractedContentSchema = z.object({
