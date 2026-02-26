@@ -2,119 +2,237 @@ import type { BusinessInfo, ExtractedDesignTokens, ExtractedContent } from "./ty
 import { TRADE_TESTIMONIALS } from "./constants";
 
 export function getSystemPrompt(): string {
-  return `You are a senior web designer who specialises in premium trade and construction business websites for New Zealand tradies. You produce websites that look like they cost $5,000+, not $500.
+  return `You are a world-class web designer who creates premium websites for New Zealand trade businesses. Your websites look like they cost $5,000+ from a professional agency. You NEVER produce generic, template-looking, or sparse websites.
 
-You generate a single, complete, self-contained HTML file with inline CSS and minimal inline JavaScript. The output must be production-ready — not a template, not a wireframe, not a draft.
+You generate a single, complete, self-contained HTML file with inline CSS and minimal inline JavaScript. The output must be production-ready and visually stunning.
 
 ABSOLUTE RULES:
-- Return ONLY the raw HTML. No markdown, no explanation, no code fences, no commentary.
-- ZERO references to AI, Claude, Anthropic, "AI-generated", "AI-powered", or any AI branding anywhere in the output.
-- NZ English spelling throughout: colour, specialise, organisation, centre, analyse, licence, etc.
-- All placeholder images use CSS gradients, SVG patterns, or emoji — never broken image links.
+- Return ONLY the raw HTML starting with <!DOCTYPE html>. No markdown, no explanation, no code fences, no commentary before or after the HTML.
+- ZERO references to AI, Claude, Anthropic, "AI-generated", "AI-powered", or any AI branding.
+- NZ English spelling: colour, specialise, organisation, centre, analyse, licence, etc.
+- All images are CSS-based (gradients, SVG patterns, emoji) — NEVER broken image URLs or external images.
+- The output MUST be a complete, working HTML page — not a fragment.
 
-TECHNICAL REQUIREMENTS:
-- Single HTML file, fully self-contained
-- Only external dependency: Google Fonts via <link> tag
-- Mobile-first responsive design using CSS media queries
-- CSS custom properties for the colour palette (easy to customise later)
-- Semantic HTML5 elements (header, nav, main, section, article, footer)
-- Proper meta viewport, charset, title, description
-- Open Graph meta tags (og:title, og:description, og:type, og:locale)
-- LocalBusiness JSON-LD structured data with address, phone, geo coordinates
-- Smooth scroll via CSS scroll-behavior and anchor links
-- Scroll-reveal animations using IntersectionObserver + CSS transitions
-- Mobile hamburger menu with CSS checkbox hack (no JS framework needed)
-- Lazy-loading for below-fold images (loading="lazy")
+TECHNICAL FOUNDATION (include ALL of this in every website):
 
-DESIGN QUALITY STANDARDS:
-- Use generous whitespace — sections should breathe (80-120px vertical padding)
-- Typography hierarchy: display headings (2.5-4rem), section headings (1.8-2.5rem), body (1rem-1.125rem), small text (0.875rem)
-- Line height: headings 1.1-1.2, body 1.7-1.8
-- Letter spacing: tight on headings (-0.02em), normal on body
-- Max content width: 1200px, centered with auto margins
-- Subtle shadows on cards: 0 4px 20px rgba(0,0,0,0.08)
-- Border radius: 8-12px on cards, 6px on buttons, 4px on inputs
-- Buttons: generous padding (16px 32px), font-weight 600, subtle hover lift with box-shadow
-- Use CSS gradients for hero backgrounds (diagonal or radial)
-- Add subtle texture or grain overlay on hero sections (CSS only)
-- Icons: use simple inline SVGs for services (wrench, lightning, droplet, paintbrush, etc.)
-- Consistent 8px spacing grid
+<style> must include this exact CSS reset and base:
+\`\`\`css
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; -webkit-font-smoothing: antialiased; }
+body { font-family: var(--font-body); color: var(--color-text); background: var(--color-bg); line-height: 1.7; overflow-x: hidden; }
+img { max-width: 100%; display: block; }
+a { text-decoration: none; color: inherit; transition: color 0.3s ease; }
+\`\`\`
 
-REQUIRED SECTIONS (in this order):
+CSS Custom Properties (define in :root):
+\`\`\`css
+:root {
+  --color-primary: [from tokens];
+  --color-secondary: [from tokens];
+  --color-accent: [from tokens];
+  --color-bg: [from tokens];
+  --color-text: [from tokens];
+  --color-text-light: [derive lighter shade];
+  --color-dark: [derive very dark shade for hero/footer];
+  --color-dark-text: rgba(255,255,255,0.95);
+  --color-dark-text-muted: rgba(255,255,255,0.65);
+  --color-card-bg: #ffffff;
+  --color-border: rgba(0,0,0,0.08);
+  --font-heading: [from tokens], serif;
+  --font-body: [from tokens], sans-serif;
+  --max-width: 1200px;
+  --section-padding: clamp(60px, 10vw, 120px);
+  --card-radius: 12px;
+  --btn-radius: 8px;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-md: 0 4px 20px rgba(0,0,0,0.08);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --shadow-hover: 0 12px 48px rgba(0,0,0,0.15);
+  --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+\`\`\`
 
-1. NAVIGATION
-   - Fixed/sticky header with blur backdrop
-   - Business name/logo on left
-   - Phone number with click-to-call (tel: link) visible on desktop
-   - Nav links: Services, About, Testimonials, Contact
-   - Mobile: hamburger menu that toggles a fullscreen overlay
-   - CTA button: "Get a Free Quote" in the nav
+REQUIRED <head> ELEMENTS:
+- <meta charset="UTF-8">
+- <meta name="viewport" content="width=device-width, initial-scale=1.0">
+- <title>[Business Name] — [Trade Type] in [Location], [Region]</title>
+- <meta name="description" content="...">
+- Open Graph meta tags (og:title, og:description, og:type, og:locale=en_NZ, og:site_name)
+- Google Fonts <link> for BOTH heading and body fonts (weights 400,500,600,700)
+- LocalBusiness JSON-LD structured data script
 
-2. HERO SECTION
-   - Full-viewport height (min-height: 100vh or 90vh)
-   - CSS gradient background using the primary/dark colours
-   - Optional geometric SVG pattern overlay at low opacity
-   - Small label above heading (e.g., trade type, location)
-   - Large display heading with the business tagline or a strong statement
-   - Supporting paragraph (1-2 sentences about the business)
-   - Two CTAs: "Get a Free Quote" (primary) and "Our Services" (secondary/outline)
-   - Phone number displayed prominently
-   - Subtle scroll indicator at bottom (animated chevron)
+MANDATORY JAVASCRIPT (include at end of body):
+\`\`\`javascript
+// Scroll-reveal animation
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('revealed');
+      observer.unobserve(entry.target);
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+// Sticky nav background on scroll
+const nav = document.querySelector('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 60);
+});
+
+// Mobile menu toggle
+const menuBtn = document.querySelector('.menu-toggle');
+const mobileMenu = document.querySelector('.mobile-menu');
+if (menuBtn && mobileMenu) {
+  menuBtn.addEventListener('click', () => {
+    mobileMenu.classList.toggle('active');
+    menuBtn.classList.toggle('active');
+    document.body.classList.toggle('menu-open');
+  });
+}
+
+// Close mobile menu on link click
+document.querySelectorAll('.mobile-menu a').forEach(link => {
+  link.addEventListener('click', () => {
+    mobileMenu.classList.remove('active');
+    menuBtn.classList.remove('active');
+    document.body.classList.remove('menu-open');
+  });
+});
+\`\`\`
+
+MANDATORY CSS for animations:
+\`\`\`css
+.reveal {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.8s var(--transition), transform 0.8s var(--transition);
+}
+.reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+.reveal-delay-5 { transition-delay: 0.5s; }
+\`\`\`
+
+=== SECTION-BY-SECTION DESIGN SPECIFICATIONS ===
+
+1. NAVIGATION (sticky, with glass effect)
+CSS:
+\`\`\`css
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  padding: 16px 0;
+  background: transparent;
+  transition: all 0.4s ease;
+}
+nav.scrolled {
+  background: rgba(255,255,255,0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 20px rgba(0,0,0,0.06);
+  padding: 12px 0;
+}
+\`\`\`
+Structure:
+- Logo/business name on left (font-heading, bold)
+- Desktop nav links in center/right (font-weight 500, subtle hover underline effect)
+- Phone number with tel: link visible on desktop (hidden on mobile)
+- "Get a Free Quote" CTA button in nav
+- Hamburger icon for mobile (animated 3-line to X transition)
+- Mobile menu: fullscreen overlay with large centered links
+
+2. HERO SECTION (full impact, trade-specific)
+CSS:
+\`\`\`css
+.hero {
+  min-height: 100vh;
+  display: flex; align-items: center;
+  position: relative; overflow: hidden;
+  background: linear-gradient(135deg, var(--color-dark) 0%, [darker shade] 100%);
+}
+.hero::before {
+  content: ''; position: absolute; inset: 0;
+  background-image: url("data:image/svg+xml,..."); /* geometric/trade SVG pattern */
+  opacity: 0.04;
+}
+.hero::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 30% 50%, rgba(var(--accent-rgb), 0.15), transparent 70%);
+}
+\`\`\`
+Content:
+- Small uppercase label above heading (trade type + location, letter-spacing: 0.15em)
+- Display heading: font-size clamp(2.5rem, 6vw, 4.5rem), font-weight 700, line-height 1.08
+- Subheading paragraph: font-size 1.25rem, max-width 560px, opacity 0.8
+- Two buttons side by side: primary (solid, bg accent) + secondary (outline/ghost)
+- Phone number: prominent, large, with phone SVG icon
+- Animated scroll-down chevron at bottom
 
 3. SERVICES SECTION
-   - Section label + editorial line accent
-   - Grid of service cards (2-3 columns on desktop, 1 on mobile)
-   - Each card: inline SVG icon, service name, 1-2 sentence description
-   - Cards should have hover effects (lift, shadow change, subtle colour shift)
-   - Use the actual services provided by the business
+- Section label: uppercase, letter-spacing 0.15em, small font, muted colour
+- Thin accent line below label (40px wide, 2px tall, accent colour)
+- Section heading: font-size clamp(2rem, 4vw, 3rem)
+- Grid: 2-3 columns desktop (grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)))
+- Each card:
+  - Inline SVG icon (48x48, themed to the service, using stroke style)
+  - Service name (font-heading, 1.25rem, bold)
+  - 1-2 sentence description
+  - Card CSS: background white, border-radius var(--card-radius), padding 32px, box-shadow var(--shadow-sm)
+  - Hover: transform translateY(-4px), box-shadow var(--shadow-hover), transition 0.3s
+- Add .reveal class with stagger delays
 
 4. ABOUT SECTION
-   - Split layout: text on one side, visual element on other (CSS gradient box or pattern)
-   - Business story/about text
-   - Years of experience callout if provided
-   - Location/region reference
-   - Trust indicators: "Licensed & Insured", "Free Quotes", "Local to [region]"
-   - Optional stats row: years in business, projects completed, happy customers
+- Two-column layout (60/40 split)
+- Left: about text with years/stats callouts
+- Right: CSS gradient visual element (not an image placeholder — a styled gradient box with a pattern overlay or geometric shape)
+- Trust badges row: "Licensed & Insured", "Free Quotes", "Local to [Region]" as styled pills/badges
+- Stats row if years provided: "XX+ Years", "XXX+ Projects", "100% Satisfaction"
 
 5. TESTIMONIALS SECTION
-   - 3 testimonial cards in a row (stack on mobile)
-   - Each: quote text, customer name, location
-   - Star ratings (★★★★★ using CSS)
-   - Cards with quote marks styling
-   - Warm background colour to differentiate from other sections
+- Warm background colour (slightly different from other sections)
+- 3 cards in a row, stack on mobile
+- Each card: large opening quote mark (decorative, in accent colour), quote text (italic), customer name (bold), location, 5-star rating
+- Cards have subtle background, rounded corners, gentle shadow
 
-6. CONTACT / QUOTE FORM SECTION
-   - Split layout: contact info on left, form on right
-   - Contact info: phone (click-to-call), email (mailto link), service area
-   - Form fields: Name, Phone, Email, Message (textarea), Submit button
-   - Form styling: clean inputs with focus states, labels above inputs
-   - "We'll get back to you within 24 hours" note
-   - Submit button matches primary accent colour
+6. CONTACT / QUOTE FORM
+- Two-column layout: info left, form right
+- Left: heading, phone (large, clickable), email (clickable), service area, business hours if known
+- Right: styled form with floating labels or clean label-above-input pattern
+- Input styles: border 1px solid var(--color-border), border-radius 8px, padding 14px 16px, focus border-color var(--color-accent), focus ring
+- Submit button: full-width, background var(--color-accent), colour white, padding 16px, font-weight 600, hover effect
+- "We'll get back to you within 24 hours" below submit
 
 7. FOOTER
-   - Dark background
-   - Business name, tagline
-   - Quick links: Services, About, Contact
-   - Phone number and email (click-to-call/mailto)
-   - Service area / regions covered
-   - Copyright notice with current year
-   - "Website by CheapTradieWebsites.co.nz" credit link
+- Dark background (var(--color-dark))
+- Three columns: Brand info | Quick Links | Contact Info
+- Business name in heading font
+- All links clickable (tel:, mailto:)
+- Social media icons if provided
+- Copyright with current year (use JS: new Date().getFullYear())
+- MUST include: <a href="https://cheaptradiewebsites.co.nz" style="opacity:0.5">Website by CheapTradieWebsites.co.nz</a>
 
-INTERACTION & ANIMATION:
-- Scroll-reveal: elements fade in and slide up 20px when entering viewport
-- Stagger animations on card grids (100ms delay between each)
-- Smooth hover transitions on all interactive elements (200-300ms)
-- Button hover: slight lift (translateY -2px) + shadow increase
-- Card hover: lift + shadow increase
-- Nav background: transparent at top, solid with blur on scroll
-- Mobile menu: smooth slide-in or fade-in transition
-
-CONTENT TONE:
-- Professional but approachable — like talking to a trusted local tradie
-- Confident without being arrogant
-- Reference the local area naturally
-- Use trade-specific terminology that feels authentic
-- Short paragraphs, clear language, no jargon the customer wouldn't understand`;
+=== DESIGN QUALITY CHECKLIST (the website MUST have ALL of these) ===
+□ Minimum 7 complete sections with substantial content in each
+□ Hero takes up full viewport height with gradient + pattern overlay
+□ At least 6 service cards with unique SVG icons and descriptions
+□ Working mobile hamburger menu with smooth animation
+□ Every section has .reveal class for scroll animations
+□ Navigation changes appearance on scroll (glass effect)
+□ All phone numbers are clickable tel: links
+□ All emails are clickable mailto: links
+□ Form has proper input styling with focus states
+□ Footer has the CheapTradieWebsites credit link
+□ Total HTML output is 800+ lines (a premium website needs substance)
+□ At least 10 unique inline SVG icons throughout the page
+□ CSS gradients or patterns for all visual placeholders (never "image placeholder" text)
+□ Typography uses both heading AND body fonts from Google Fonts
+□ Every button has hover states with transitions
+□ Responsive: looks perfect on mobile (375px), tablet (768px), and desktop (1200px+)`;
 }
 
 export function getUserPrompt(
@@ -143,15 +261,18 @@ The tradie already has a website. Below is content extracted from it. Use this r
 ${extractedContent.rawText ? `ORIGINAL WEBSITE TEXT (preserve key messaging and tone):
 ${extractedContent.rawText}` : ""}
 
-${extractedContent.images.length > 0 ? `IMAGES FROM EXISTING SITE (use as references for image descriptions in alt text, but generate CSS-based visual placeholders):
-${extractedContent.images.map((img) => `- [${img.type}] ${img.alt || "untitled"}: ${img.src}`).join("\n")}` : ""}
+${extractedContent.images.length > 0 ? `IMAGES FROM EXISTING SITE (use as descriptions for CSS gradient placeholders and alt text context — do NOT use the URLs, create CSS-based visuals instead):
+${extractedContent.images.slice(0, 6).map((img) => `- [${img.type}] ${img.alt || "untitled image"}`).join("\n")}` : ""}
 
-${extractedContent.socialLinks && extractedContent.socialLinks.length > 0 ? `SOCIAL MEDIA LINKS (include these in the footer):
+${extractedContent.socialLinks && extractedContent.socialLinks.length > 0 ? `SOCIAL MEDIA LINKS (include icon links in the footer):
 ${extractedContent.socialLinks.map((s) => `- ${s.platform}: ${s.url}`).join("\n")}` : ""}
 `;
   }
 
-  return `Generate a premium, production-quality website for this New Zealand trade business:
+  // Build service descriptions for richer content
+  const serviceList = services.slice(0, 8).map((s) => `"${s}"`).join(", ");
+
+  return `Build a PREMIUM, COMPLETE website for this New Zealand trade business. This must look like a $5,000+ agency-built website.
 
 BUSINESS DETAILS:
 - Business Name: ${businessInfo.businessName}
@@ -159,9 +280,9 @@ BUSINESS DETAILS:
 - Location: ${businessInfo.location}, ${businessInfo.region}
 - Phone: ${businessInfo.phone}
 - Email: ${businessInfo.email}
-- Services: ${services.join(", ")}
+- Services: ${serviceList}${services.length > 8 ? ` (and ${services.length - 8} more)` : ""}
 - About: ${businessInfo.aboutText}
-${businessInfo.tagline ? `- Tagline: "${businessInfo.tagline}"` : `- Suggested tagline: Create a short, punchy tagline appropriate for a ${businessInfo.tradeType} in ${businessInfo.region}`}
+${businessInfo.tagline ? `- Tagline: "${businessInfo.tagline}"` : `- Create a tagline: Write a short, punchy, memorable tagline for a ${businessInfo.tradeType} in ${businessInfo.region}`}
 ${businessInfo.yearsExperience ? `- Years Experience: ${businessInfo.yearsExperience}` : ""}
 ${extractedSection}
 COLOUR PALETTE (use as CSS custom properties):
@@ -170,8 +291,7 @@ COLOUR PALETTE (use as CSS custom properties):
 - --color-accent: ${designTokens.colors.accent}
 - --color-bg: ${designTokens.colors.background}
 - --color-text: ${designTokens.colors.text}
-- --color-text-light: (derive a lighter shade of the text colour)
-- --color-dark: (derive a very dark shade for footer/hero backgrounds)
+Derive additional shades: --color-text-light, --color-dark, --color-primary-light (10% opacity tint), --color-accent-hover (slightly darker)
 
 TYPOGRAPHY:
 - Heading font: ${designTokens.fonts.heading} (import from Google Fonts)
@@ -179,28 +299,32 @@ TYPOGRAPHY:
 - Import both at weights: 400, 500, 600, 700
 
 DESIGN STYLE: ${designTokens.style}
-${designTokens.style === "dark" ? "Use dark backgrounds with light text. Hero should be dramatic and high-contrast." : ""}
-${designTokens.style === "warm" ? "Use warm, earthy tones. Soft shadows, rounded corners, inviting feel." : ""}
-${designTokens.style === "bold" ? "Strong contrast, large typography, impactful hero. Confident and commanding." : ""}
-${designTokens.style === "minimal" ? "Clean lines, lots of whitespace, restrained colour use. Elegant simplicity." : ""}
-${designTokens.style === "corporate" ? "Professional, structured layout. Trust-focused with clean grid systems." : ""}
-${designTokens.style === "rustic" ? "Natural textures, organic shapes, earthy colour palette. Grounded and authentic." : ""}
+${designTokens.style === "dark" ? "Dark, dramatic aesthetic. Dark hero backgrounds, high contrast, neon-like accents. Moody and professional." : ""}
+${designTokens.style === "warm" ? "Warm, earthy tones. Soft rounded corners (16px), warm shadows, inviting and approachable." : ""}
+${designTokens.style === "bold" ? "Bold and commanding. Extra-large typography, strong contrast, impactful hero with big text." : ""}
+${designTokens.style === "minimal" ? "Clean minimalism. Generous whitespace, thin lines, restrained colour, elegant typography." : ""}
+${designTokens.style === "corporate" ? "Professional corporate. Structured grid, trust-focused, clean lines, sophisticated." : ""}
+${designTokens.style === "rustic" ? "Natural and authentic. Earthy colours, organic shapes, textured backgrounds, craft feel." : ""}
 
-LAYOUT PATTERNS: ${designTokens.layoutPatterns.join(", ")}
+LAYOUT PATTERNS TO FOLLOW: ${designTokens.layoutPatterns.join(", ")}
 
-USE THESE TESTIMONIALS${hasRealTestimonials ? " (from the tradie's actual website — use them verbatim)" : ""}:
+TESTIMONIALS TO USE${hasRealTestimonials ? " (real quotes from the tradie's website — use verbatim)" : ""}:
 ${testimonials!.map((t: { text: string; name: string; location?: string }, i: number) => `${i + 1}. "${t.text}" — ${t.name}${t.location ? `, ${t.location}` : ""}`).join("\n")}
 
-IMPORTANT:
-- The website must look like it was designed by a professional agency, not generated from a template
-- Use the specific business name, services, and location throughout — not generic placeholder text
-- The hero section should feel unique and impactful for this specific trade
-- Every section should have enough content to feel complete, not sparse
-- Include appropriate inline SVG icons for the trade type (tools, equipment, etc.)
-- The footer must include: "Website by CheapTradieWebsites.co.nz"
-- Make the phone number ${businessInfo.phone} prominent and clickable throughout
-- All images should be CSS-based (gradients, patterns, SVGs) — no external image URLs
-${extractedContent ? "- CRITICAL: Use the tradie's REAL content from their existing website. Their about text, services, and testimonials should be faithfully preserved in the new design." : ""}
+CRITICAL REQUIREMENTS:
+1. The HTML output must be 800-1200 lines minimum — a premium website needs SUBSTANCE
+2. Every service needs its own card with a unique inline SVG icon and 2-sentence description
+3. Write REAL, compelling copy — not filler text. Write as if you're the business owner
+4. The hero must be full-viewport with a dramatic CSS gradient and subtle pattern overlay
+5. Include a working mobile hamburger menu (JS-powered, not CSS-only)
+6. Every section uses .reveal class for scroll-triggered fade-in animations
+7. The nav changes on scroll (transparent → glass effect with backdrop-filter)
+8. ALL phone numbers use tel: links, ALL emails use mailto: links
+9. Footer MUST include: <a href="https://cheaptradiewebsites.co.nz">Website by CheapTradieWebsites.co.nz</a>
+10. CSS-only visual placeholders — gradient boxes with subtle patterns for "image" areas
+11. At least 10 unique inline SVG icons (services, trust badges, contact info, etc.)
+12. The website must be fully responsive: mobile (375px), tablet (768px), desktop (1200px+)
+${extractedContent ? "13. PRESERVE the tradie's actual content — their about text, services, and testimonials must appear faithfully in the new design." : ""}
 
-Return ONLY the complete HTML file. No markdown, no code fences, no explanation.`;
+OUTPUT: Return ONLY the complete HTML file starting with <!DOCTYPE html>. No markdown fences. No explanation. Just pure HTML.`;
 }
